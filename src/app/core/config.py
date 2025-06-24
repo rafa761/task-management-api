@@ -1,4 +1,4 @@
-# app/config.py
+# app/core/config.py
 from functools import lru_cache
 
 from pydantic import field_validator, model_validator

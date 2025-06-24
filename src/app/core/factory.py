@@ -1,4 +1,4 @@
-# app/factory.py
+# app/core/factory.py
 import logging
 
 from fastapi import FastAPI

@@ -1,0 +1,119 @@
+# .github/workflows/ruff.yml
+name: Code Quality (Ruff)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Job to detect changed files and prepare matrix
+  detect-changes:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      changed-files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any-changed: ${{ steps.changed-files.outputs.any_changed }}
+      should-run: ${{ steps.should-run.outputs.result }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed Python files
+        if: github.event_name == 'pull_request'
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            src/**/*.py
+            tests/**/*.py
+            scripts/**/*.py
+            *.py
+          separator: ' '
+
+      - name: Determine if we should run checks
+        id: should-run
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+          else
+            echo "result=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Parallel execution of Ruff checks
+  ruff-checks:
+    name: Ruff ${{ matrix.check-name }}
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-run == 'true'
+
+    strategy:
+      fail-fast: false  # Continue other checks even if one fails
+      matrix:
+        include:
+          - check-name: "Linter"
+            ruff-command: "check"
+            ruff-args: "--output-format=github"
+          - check-name: "Formatter"
+            ruff-command: "format"
+            ruff-args: "--check"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # Install Ruff
+      - name: Install Ruff
+        run: pip install ruff
+
+      # Multi-level caching for optimal performance
+      - name: Cache Ruff binary
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pipx
+            ~/.local/bin/ruff
+          key: ruff-binary-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'requirements*.txt') }}
+          restore-keys: |
+            ruff-binary-${{ runner.os }}-
+
+      - name: Cache Ruff analysis cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ruff
+          key: ruff-cache-${{ runner.os }}-${{ hashFiles('src/**/*.py', 'tests/**/*.py', 'scripts/**/*.py', '*.py') }}
+          restore-keys: |
+            ruff-cache-${{ runner.os }}-
+
+      # Run checks on changed files (PRs only)
+      - name: Run Ruff ${{ matrix.check-name }} (Changed Files)
+        if: github.event_name == 'pull_request'
+        run: |
+          if [[ -n "${{ needs.detect-changes.outputs.changed-files }}" ]]; then
+            echo "Running ruff ${{ matrix.ruff-command }} on changed files:"
+            echo "${{ needs.detect-changes.outputs.changed-files }}"
+            ruff ${{ matrix.ruff-command }} ${{ matrix.ruff-args }} ${{ needs.detect-changes.outputs.changed-files }}
+          else
+            echo "No files to check"
+            exit 0
+          fi
+
+      # Run checks on all Python directories (Push events)
+      - name: Run Ruff ${{ matrix.check-name }} (Full Check)
+        if: github.event_name == 'push'
+        run: |
+          echo "Running ruff ${{ matrix.ruff-command }} on all Python files"
+          ruff ${{ matrix.ruff-command }} ${{ matrix.ruff-args }} src/ tests/ scripts/ *.py
