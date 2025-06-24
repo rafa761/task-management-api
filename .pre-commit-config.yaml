@@ -1,18 +1,97 @@
 repos:
+  # Standard pre-commit hooks for basic file hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-      - id: check-added-large-files
-        args: [ --maxkb=2048 ]
-      - id: mixed-line-ending
-      - id: no-commit-to-branch
-        args: [ -b develop -b main ]
-      - id: requirements-txt-fixer
       - id: trailing-whitespace
-        args: [ --markdown-linebreak-ext=md ]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: ^\.github/workflows/.*\.ya?ml$ # GitHub Actions can have template syntax
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: requirements-txt-fixer
 
+  # Python upgrade syntax
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0
     hooks:
       - id: pyupgrade
-        args: [ --py313-plus ]
+        args: [--py313-plus]
+
+  # RUFF - Primary linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      # Ruff linter - checks code quality, imports, etc.
+      - id: ruff
+        name: "Ruff Linter"
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+
+      # Ruff formatter - formats code (replaces black)
+      - id: ruff-format
+        name: "Ruff Formatter"
+        types_or: [python]
+
+  # Type checking
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.16.1
+  #   hooks:
+  #     - id: mypy
+  #       files: ^src/
+  #       additional_dependencies: [types-passlib]
+
+  # File path comments automation
+  - repo: local
+    hooks:
+      - id: file-path-comments
+        name: "Add/Update file path comments"
+        entry: python scripts/add_file_paths.py --fix
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        description: "Automatically add/update file path comments in Python files"
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: "Dockerfile Lint"
+        files: Dockerfile.*
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: "Prettier (YAML/JSON/Markdown)"
+        types_or: [yaml, json, markdown]
+        exclude: ^\.github/workflows/.*\.ya?ml$
+
+# Global configuration
+default_language_version:
+  python: python3.13
+
+default_stages: [pre-commit] # Changed from [commit] to [pre-commit]
+
+# Continue running hooks even if one fails (useful for seeing all issues)
+fail_fast: false
+
+minimum_pre_commit_version: "3.5.0"
+
+# CI-specific configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

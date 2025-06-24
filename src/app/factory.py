@@ -1,3 +1,4 @@
+# app/factory.py
 import logging
 
 from fastapi import FastAPI
@@ -26,7 +27,7 @@ def create_app() -> FastAPI:
     # Configure logging
     logging.basicConfig(
         level=getattr(logging, settings.LOG_LEVEL.upper()),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Security Middleware
@@ -47,7 +48,7 @@ def create_app() -> FastAPI:
         return {
             "status": "healthy",
             "version": "1.0.0",
-            "environment": settings.ENVIRONMENT
+            "environment": settings.ENVIRONMENT,
         }
 
     # Root endpoint
@@ -57,7 +58,7 @@ def create_app() -> FastAPI:
         return {
             "message": "Task Management API",
             "version": "1.0.0",
-            "docs": "/docs" if settings.DEBUG else "Documentation disabled"
+            "docs": "/docs" if settings.DEBUG else "Documentation disabled",
         }
 
     return app

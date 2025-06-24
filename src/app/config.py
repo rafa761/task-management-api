@@ -1,3 +1,4 @@
+# app/config.py
 from functools import lru_cache
 
 from pydantic import field_validator, model_validator
@@ -8,6 +9,7 @@ class Settings(BaseSettings):
     """
     Application settings with environment variable support.
     """
+
     # Application Settings
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
@@ -36,7 +38,7 @@ class Settings(BaseSettings):
     @field_validator("ENVIRONMENT")
     @classmethod
     def validate_environment(cls, value: str) -> str:
-        """ Ensure environment is one of the allowed values. """
+        """Ensure environment is one of the allowed values."""
         allowed = ["development", "staging", "production"]
         if value not in allowed:
             raise ValueError(f"Environment must be one of: {allowed}")
@@ -45,16 +47,18 @@ class Settings(BaseSettings):
     @field_validator("ALLOWED_HOSTS", "ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_comma_separated_string(cls, value: str | list[str]) -> list[str]:
-        """ Parse comma-separated string into list """
+        """Parse comma-separated string into list"""
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
-        if self.ENVIRONMENT == "production":
-            if self.SECRET_KEY == "your-secret-key-change-in-production":
-                raise ValueError("SECRET_KEY must be changed in production")
+        if (
+            self.ENVIRONMENT == "production"
+            and self.SECRET_KEY == "your-secret-key-change-in-production"
+        ):
+            raise ValueError("SECRET_KEY must be changed in production")
         return self
 
     model_config = {

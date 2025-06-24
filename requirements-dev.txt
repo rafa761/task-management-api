@@ -7,3 +7,4 @@ pre-commit==4.2.0
 
 pytest==8.4.1
 pytest-asyncio==1.0.0
+rufus==0.1.0

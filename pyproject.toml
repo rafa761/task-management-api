@@ -1,0 +1,171 @@
+# pyproject.toml - Clean Portfolio Project Configuration
+# Task Management API - Portfolio Project
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "task-management-api"
+version = "1.0.0"
+description = "Task Management API with FastAPI - Portfolio Project"
+readme = "README.md"
+authors = [
+    { name = "Rafael Ferreira", email = "rafaelferreira761@gmail.com" }
+]
+requires-python = ">=3.10"
+
+# Core dependencies
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.11.0",
+    "pydantic-settings>=2.10.0",
+    "httpx>=0.28.0",
+    # Database
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    # Authentication
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.9",
+]
+
+# Development dependencies
+[project.optional-dependencies]
+dev = [
+    # Code quality
+    "ruff>=0.8.0",
+    "mypy>=1.16.0",
+    # Testing
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.0.0",
+    # Development tools
+    "pre-commit>=4.2.0",
+    # Type stubs
+    "types-passlib",
+]
+
+[project.urls]
+Repository = "https://github.com/rafa761/team-task-management-api"
+
+# ========================================
+# RUFF - Linting and Formatting
+# ========================================
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "migrations",
+]
+
+[tool.ruff.lint]
+# Essential rules for clean code
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # Pyflakes
+    "I", # isort (import sorting)
+    "N", # pep8-naming
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PTH", # flake8-use-pathlib
+]
+
+ignore = [
+    "E501", # Line too long (handled by formatter)
+]
+
+# Auto-fix what we can
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests don't need docstrings and can use assertions
+"tests/*" = ["D", "S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+# ========================================
+# MYPY - Type Checking
+# ========================================
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+# Project structure
+mypy_path = "src"
+packages = ["src"]
+
+exclude = [
+    "migrations/",
+]
+
+# Third-party libraries without stubs
+[[tool.mypy.overrides]]
+module = [
+    "uvicorn.*",
+    "alembic.*",
+]
+ignore_missing_imports = true
+
+# ========================================
+# PYTEST - Testing
+# ========================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+addopts = [
+    "--strict-markers",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html:reports/coverage",
+    "--cov-fail-under=80",
+]
+
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+]
+
+# ========================================
+# COVERAGE
+# ========================================
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "src/migrations/*",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+# ========================================
+# SETUPTOOLS
+# ========================================
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
