@@ -39,13 +39,10 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
             echo "result=true" >> $GITHUB_OUTPUT
-            echo "Push event - will run full checks"
-          elif [[ "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
+          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
             echo "result=true" >> $GITHUB_OUTPUT
-            echo "Python files changed - will run targeted checks"
           else
             echo "result=false" >> $GITHUB_OUTPUT
-            echo "No Python files changed - skipping checks"
           fi
 
   # Parallel execution of Ruff checks
@@ -96,27 +93,22 @@ jobs:
           restore-keys: |
             ruff-cache-${{ runner.os }}-
 
-      # Debug information
-      - name: Debug - Show execution context
-        run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Check: ${{ matrix.check-name }}"
-          echo "Command: ruff ${{ matrix.ruff-command }} ${{ matrix.ruff-args }}"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "Changed files: ${{ needs.detect-changes.outputs.changed-files }}"
-            echo "File count: $(echo '${{ needs.detect-changes.outputs.changed-files }}' | wc -w)"
-          fi
-
       # Run checks on changed files (PRs only)
       - name: Run Ruff ${{ matrix.check-name }} (Changed Files)
         if: github.event_name == 'pull_request'
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: '${{ matrix.ruff-command }} ${{ matrix.ruff-args }} ${{ needs.detect-changes.outputs.changed-files }}'
+        run: |
+          if [[ -n "${{ needs.detect-changes.outputs.changed-files }}" ]]; then
+            echo "Running ruff ${{ matrix.ruff-command }} on changed files:"
+            echo "${{ needs.detect-changes.outputs.changed-files }}"
+            ruff ${{ matrix.ruff-command }} ${{ matrix.ruff-args }} ${{ needs.detect-changes.outputs.changed-files }}
+          else
+            echo "No files to check"
+            exit 0
+          fi
 
       # Run checks on all Python directories (Push events)
       - name: Run Ruff ${{ matrix.check-name }} (Full Check)
         if: github.event_name == 'push'
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: '${{ matrix.ruff-command }} ${{ matrix.ruff-args }} src/ tests/ scripts/ *.py'
+        run: |
+          echo "Running ruff ${{ matrix.ruff-command }} on all Python files"
+          ruff ${{ matrix.ruff-command }} ${{ matrix.ruff-args }} src/ tests/ scripts/ *.py
