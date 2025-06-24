@@ -1,3 +1,4 @@
+# .github/workflows/ruff.yml
 name: Code Quality (Ruff)
 
 on:
@@ -74,12 +75,16 @@ jobs:
         with:
           python-version: '3.13'
 
+      # Install Ruff
+      - name: Install Ruff
+        run: pip install ruff
+
       # Multi-level caching for optimal performance
       - name: Cache Ruff binary
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pip
+            ~/.local/share/pipx
             ~/.local/bin/ruff
           key: ruff-binary-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'requirements*.txt') }}
           restore-keys: |
