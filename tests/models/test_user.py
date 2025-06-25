@@ -31,7 +31,12 @@ class TestUserModelBusinessLogic:
     def test_initials_property(self, sample_user_data):
         """Test initials property generates correct initials"""
         user = UserModel(**sample_user_data)
-        assert user.initials == "MF"
+        assert user.initials == "".join(
+            (
+                sample_user_data.get("first_name")[0].upper(),
+                sample_user_data.get("last_name")[0].upper(),
+            )
+        )
 
     def test_initials_fallback_to_email(self, sample_user_data):
         """Test initials falls back to email if no names"""
