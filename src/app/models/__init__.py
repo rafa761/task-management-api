@@ -6,7 +6,7 @@ This module provides a clean interface to all database models and related
 components for easy importing throughout the application.
 
 Usage:
-    from app.models import User, Team, Task, TeamRoleEnum, TaskStatusEnum
+    from app.models import UserModel, TeamModel, TaskModel, TeamRoleEnum, TaskStatusEnum
     from app.models import Base  # For migrations and database operations
 
 The models are organized by domain:
@@ -18,7 +18,7 @@ The models are organized by domain:
 - base.py: Base model class and mixins
 """
 
-from .base import AuditMixin, Base, TimestampMixin, UserTimestampMixin, utc_now
+from .base import AuditMixin, BaseModel, TimestampMixin, UserTimestampMixin
 
 # Import all enum types
 from .enums import (
@@ -29,21 +29,20 @@ from .enums import (
     TaskStatusEnum,
     TeamRoleEnum,
 )
-from .project import Project
-from .task import Task, TaskAssignment, TaskDependency
-from .team import Team, TeamMembership
+from .project import ProjectModel
+from .task import TaskAssignmentModel, TaskDependencyModel, TaskModel
+from .team import TeamMembershipModel, TeamModel
 
 # Import model classes in dependency order
-from .user import User
+from .user import UserModel
 
 # Export all models and components for easy importing
 __all__ = [
     # Base components
-    "Base",
+    "BaseModel",
     "TimestampMixin",
     "AuditMixin",
     "UserTimestampMixin",
-    "utc_now",
     # Enums
     "TeamRoleEnum",
     "TaskStatusEnum",
@@ -52,11 +51,11 @@ __all__ = [
     "NotificationEventTypeEnum",
     "AttachmentTypeEnum",
     # Models
-    "User",
-    "Team",
-    "TeamMembership",
-    "Project",
-    "Task",
-    "TaskAssignment",
-    "TaskDependency",
+    "UserModel",
+    "TeamModel",
+    "TeamMembershipModel",
+    "ProjectModel",
+    "TaskModel",
+    "TaskAssignmentModel",
+    "TaskDependencyModel",
 ]

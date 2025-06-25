@@ -9,6 +9,7 @@
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/vcs.xml
+.idea/ruff.xml
 
 # AWS User-specific
 .idea/**/aws.xml
@@ -729,3 +730,6 @@ cython_debug/
 
 # Project structure files
 project-structure.txt
+
+# Claude control file
+CLAUDE.md

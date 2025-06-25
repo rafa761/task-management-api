@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import NullPool, QueuePool
 
 from app.core.config import settings
-from app.models import Base
+from app.models import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -112,10 +112,10 @@ class DatabaseConfig:
         async with self.engine.begin() as conn:
             if drop_existing:
                 logger.warning("Dropping existing database tables")
-                await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(BaseModel.metadata.drop_all)
 
             logger.info("Creating database tables")
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(BaseModel.metadata.create_all)
 
     async def close(self) -> None:
         """Close database connections"""
@@ -239,7 +239,7 @@ async def create_test_database() -> None:
     )
 
     async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(BaseModel.metadata.create_all)
 
     await test_engine.dispose()
 
@@ -253,6 +253,6 @@ async def drop_test_database() -> None:
     )
 
     async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(BaseModel.metadata.drop_all)
 
     await test_engine.dispose()

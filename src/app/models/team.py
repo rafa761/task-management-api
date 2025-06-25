@@ -20,20 +20,22 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin, utc_now
+from ..utils.dates import utc_now
+from .base import BaseModel, TimestampMixin
 from .enums import TeamRoleEnum
 
 # Avoid circular imports
 if TYPE_CHECKING:
-    from .project import Project
-    from .user import User
+    from .project import ProjectModel
+    from .user import UserModel
 
 
-class Team(Base, TimestampMixin):
+class TeamModel(BaseModel, TimestampMixin):
     """
     Team/Workspace entity for multi-tenant organization.
 
@@ -90,30 +92,30 @@ class Team(Base, TimestampMixin):
     )
 
     # Relationships
-    memberships: Mapped[list["TeamMembership"]] = relationship(
-        "TeamMembership",
+    memberships: Mapped[list["TeamMembershipModel"]] = relationship(
+        "TeamMembershipModel",
         back_populates="team",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
-    projects: Mapped[list["Project"]] = relationship(
-        "Project",
+    projects: Mapped[list["ProjectModel"]] = relationship(
+        "ProjectModel",
         back_populates="team",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
     # Helper methods
-    def get_owners(self) -> list["TeamMembership"]:
+    def get_owners(self) -> list["TeamMembershipModel"]:
         """Get all team owners."""
         return [m for m in self.memberships if m.role == TeamRoleEnum.OWNER]
 
-    def get_admins(self) -> list["TeamMembership"]:
+    def get_admins(self) -> list["TeamMembershipModel"]:
         """Get all team admins (owners + admins)."""
         return [m for m in self.memberships if m.role in TeamRoleEnum.admin_roles()]
 
-    def get_active_members(self) -> list["TeamMembership"]:
+    def get_active_members(self) -> list["TeamMembershipModel"]:
         """Get all active team members (joined and not deleted)."""
         return [
             m for m in self.memberships if m.joined_at is not None and not m.is_deleted
@@ -147,10 +149,10 @@ class Team(Base, TimestampMixin):
         return role is not None and TeamRoleEnum.can_modify_team(role)
 
     def __repr__(self) -> str:
-        return f"<Team(id='{self.id}', name='{self.name}', slug='{self.slug}')>"
+        return f"<TeamModel(id='{self.id}', name='{self.name}', slug='{self.slug}')>"
 
 
-class TeamMembership(Base):
+class TeamMembershipModel(BaseModel):
     """
     Many-to-many relationship between Users and Teams with rich metadata.
 
@@ -193,7 +195,7 @@ class TeamMembership(Base):
     # Membership lifecycle
     invited_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default="now()",
+        server_default=func.now(),
         nullable=False,
         comment="When the user was invited to the team",
     )
@@ -219,12 +221,12 @@ class TeamMembership(Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship(
-        "User", back_populates="team_memberships", foreign_keys=[user_id]
+    user: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="team_memberships", foreign_keys=[user_id]
     )
-    team: Mapped[Team] = relationship("Team", back_populates="memberships")
-    invited_by: Mapped["User | None"] = relationship(
-        "User", foreign_keys=[invited_by_id]
+    team: Mapped[TeamModel] = relationship("TeamModel", back_populates="memberships")
+    invited_by: Mapped["UserModel"] = relationship(
+        "UserModel", foreign_keys=[invited_by_id]
     )
 
     # Constraints
@@ -300,6 +302,6 @@ class TeamMembership(Base):
             "pending" if self.is_pending else "active" if self.is_active else "deleted"
         )
         return (
-            f"<TeamMembership(user_id='{self.user_id}', team_id='{self.team_id}', "
+            f"<TeamMembershipModel(user_id='{self.user_id}', team_id='{self.team_id}', "
             f"role='{self.role.value}', status='{status}')>"
         )

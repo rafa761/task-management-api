@@ -25,16 +25,17 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin, utc_now
+from ..utils.dates import utc_now
+from .base import BaseModel, TimestampMixin
 from .enums import ProjectStatusEnum
 
 # Avoid circular imports
 if TYPE_CHECKING:
-    from .task import Task
-    from .team import Team
+    from .task import TaskModel
+    from .team import TeamModel
 
 
-class Project(Base, TimestampMixin):
+class ProjectModel(BaseModel, TimestampMixin):
     """
     Project entity for grouping tasks within teams.
 
@@ -54,7 +55,6 @@ class Project(Base, TimestampMixin):
 
     __tablename__ = "projects"
 
-    # Team relationship (required)
     team_id: Mapped[UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("teams.id", ondelete="CASCADE"),
@@ -62,24 +62,18 @@ class Project(Base, TimestampMixin):
         index=True,
         comment="Team that owns this project",
     )
-
-    # Basic project information
     name: Mapped[str] = mapped_column(
         String(200), nullable=False, comment="Project name"
     )
     description: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="Detailed project description and goals"
     )
-
-    # Project status and lifecycle
     status: Mapped[ProjectStatusEnum] = mapped_column(
         Enum(ProjectStatusEnum),
         default=ProjectStatusEnum.PLANNING,
         nullable=False,
         comment="Current project status",
     )
-
-    # Project timeline
     start_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -90,37 +84,30 @@ class Project(Base, TimestampMixin):
         nullable=True,
         comment="Planned or actual project end date",
     )
-
-    # Project settings
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False, comment="Whether the project is active"
     )
-
-    # Project organization
     color: Mapped[str | None] = mapped_column(
-        String(7),  # Hex color code (#RRGGBB)
+        String(7),
         nullable=True,
         comment="Project color for UI display (hex code)",
     )
-
     position: Mapped[int] = mapped_column(
         Integer, default=0, nullable=False, comment="Display order within team projects"
     )
-
-    # Progress tracking
     estimated_hours: Mapped[int | None] = mapped_column(
         Integer, nullable=True, comment="Estimated project duration in hours"
     )
 
     # Relationships
-    team: Mapped["Team"] = relationship("Team", back_populates="projects")
+    team: Mapped["TeamModel"] = relationship("TeamModel", back_populates="projects")
 
-    tasks: Mapped[list["Task"]] = relationship(
-        "Task",
+    tasks: Mapped[list["TaskModel"]] = relationship(
+        "TaskModel",
         back_populates="project",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        order_by="Task.position, Task.created_at",
+        order_by="TaskModel.position, TaskModel.created_at",
     )
 
     # Constraints
@@ -193,15 +180,15 @@ class Project(Base, TimestampMixin):
             self.status = ProjectStatusEnum.ACTIVE
 
     # Task management helpers
-    def get_active_tasks(self) -> list["Task"]:
+    def get_active_tasks(self) -> list["TaskModel"]:
         """Get all active (non-completed) tasks in this project."""
         return [task for task in self.tasks if task.status.is_active()]
 
-    def get_completed_tasks(self) -> list["Task"]:
+    def get_completed_tasks(self) -> list["TaskModel"]:
         """Get all completed tasks in this project."""
         return [task for task in self.tasks if task.status.is_completed()]
 
-    def get_overdue_tasks(self) -> list["Task"]:
+    def get_overdue_tasks(self) -> list["TaskModel"]:
         """Get all overdue tasks in this project."""
         now = utc_now()
         return [
@@ -219,6 +206,6 @@ class Project(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return (
-            f"<Project(id='{self.id}', name='{self.name}', "
+            f"<ProjectModel(id='{self.id}', name='{self.name}', "
             f"status='{self.status.value}', team_id='{self.team_id}')>"
         )
