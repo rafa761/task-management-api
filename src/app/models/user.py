@@ -92,6 +92,7 @@ class User(Base, TimestampMixin):
     team_memberships: Mapped[list["TeamMembership"]] = relationship(
         "TeamMembership",
         back_populates="user",
+        foreign_keys="TeamMembership.user_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
@@ -99,6 +100,7 @@ class User(Base, TimestampMixin):
     assigned_tasks: Mapped[list["TaskAssignment"]] = relationship(
         "TaskAssignment",
         back_populates="assignee",
+        foreign_keys="TaskAssignment.assignee_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )

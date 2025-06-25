@@ -173,6 +173,7 @@ class Task(Base, TimestampMixin):
         foreign_keys="TaskDependency.prerequisite_task_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        overlaps="prerequisite_task",
     )
 
     # Properties and computed fields
