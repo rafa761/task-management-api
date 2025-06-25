@@ -1,7 +1,7 @@
 # app/core/config.py
 from functools import lru_cache
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -77,15 +77,6 @@ class Settings(BaseSettings):
         if value not in allowed:
             raise ValueError(f"Environment must be one of: {allowed}")
         return value
-
-    @model_validator(mode="after")
-    def validate_production_settings(self) -> "Settings":
-        if (
-            self.ENVIRONMENT == "production"
-            and self.SECRET_KEY == "your-secret-key-change-in-production"
-        ):
-            raise ValueError("SECRET_KEY must be changed in production")
-        return self
 
     @property
     def allowed_hosts_list(self) -> list[str]:
