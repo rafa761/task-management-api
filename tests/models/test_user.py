@@ -1,6 +1,6 @@
 # tests/models/test_user.py
 """
-User Model Tests - Pragmatic Approach
+User Model Tests
 
 Tests model behavior including simple database operations.
 Complex queries and business workflows are tested in repository/service layers.
@@ -10,11 +10,12 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import UserModel, utc_now
+from app.models import UserModel
+from app.utils.dates import utc_now
 
 
 class TestUserModelBusinessLogic:
-    """Test pure business logic - NO database required"""
+    """Test pure business logic"""
 
     def test_full_name_property(self, sample_user_data):
         """Test full_name property combines first and last name"""
@@ -81,7 +82,7 @@ class TestUserModelBusinessLogic:
         # Deactivate
         user.deactivate()
 
-        # Check field changes (no database required)
+        # Check field changes
         assert user.is_active is False
         assert user.deleted_at is not None
         assert user.is_deleted is True

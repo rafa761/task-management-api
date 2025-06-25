@@ -25,7 +25,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import BaseModel, TimestampMixin, utc_now
+from ..utils.dates import utc_now
+from .base import BaseModel, TimestampMixin
 from .enums import TeamRoleEnum
 
 # Avoid circular imports

@@ -27,7 +27,8 @@ from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from .base import BaseModel, TimestampMixin, utc_now
+from ..utils.dates import utc_now
+from .base import BaseModel, TimestampMixin
 from .enums import TaskPriorityEnum, TaskStatusEnum
 
 # Avoid circular imports

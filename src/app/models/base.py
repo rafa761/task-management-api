@@ -1,6 +1,6 @@
 # app/models/base.py
 
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime
@@ -8,10 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
-
-def utc_now() -> datetime:
-    """Get current UTC time. Use this for all database operations."""
-    return datetime.now(UTC)
+from app.utils.dates import utc_now
 
 
 class BaseModel(DeclarativeBase):

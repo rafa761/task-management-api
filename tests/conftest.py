@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.models import BaseModel
+from app.models.enums import ProjectStatusEnum
 
 
 @pytest_asyncio.fixture
@@ -55,4 +56,30 @@ def sample_user_data():
         "timezone": "UTC",
         "is_active": True,
         "is_verified": True,
+    }
+
+
+@pytest.fixture
+def sample_project_data():
+    """Sample project data for tests."""
+    from uuid import uuid4
+
+    return {
+        "team_id": uuid4(),  # Will be replaced with real team ID in tests
+        "name": "Test Project",
+        "description": "Test Project Description",
+        "status": ProjectStatusEnum.PLANNING,
+        "is_active": True,
+    }
+
+
+@pytest.fixture
+def sample_team_data():
+    """Sample team data for tests."""
+    return {
+        "name": "Test Team",
+        "slug": "test-team",
+        "description": "A test team for unit testing",
+        "is_active": True,
+        "allow_public_signup": False,
     }

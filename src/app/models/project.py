@@ -25,7 +25,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import BaseModel, TimestampMixin, utc_now
+from ..utils.dates import utc_now
+from .base import BaseModel, TimestampMixin
 from .enums import ProjectStatusEnum
 
 # Avoid circular imports
@@ -54,7 +55,6 @@ class ProjectModel(BaseModel, TimestampMixin):
 
     __tablename__ = "projects"
 
-    # Team relationship (required)
     team_id: Mapped[UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("teams.id", ondelete="CASCADE"),
@@ -62,24 +62,18 @@ class ProjectModel(BaseModel, TimestampMixin):
         index=True,
         comment="Team that owns this project",
     )
-
-    # Basic project information
     name: Mapped[str] = mapped_column(
         String(200), nullable=False, comment="Project name"
     )
     description: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="Detailed project description and goals"
     )
-
-    # Project status and lifecycle
     status: Mapped[ProjectStatusEnum] = mapped_column(
         Enum(ProjectStatusEnum),
         default=ProjectStatusEnum.PLANNING,
         nullable=False,
         comment="Current project status",
     )
-
-    # Project timeline
     start_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -90,24 +84,17 @@ class ProjectModel(BaseModel, TimestampMixin):
         nullable=True,
         comment="Planned or actual project end date",
     )
-
-    # Project settings
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False, comment="Whether the project is active"
     )
-
-    # Project organization
     color: Mapped[str | None] = mapped_column(
-        String(7),  # Hex color code (#RRGGBB)
+        String(7),
         nullable=True,
         comment="Project color for UI display (hex code)",
     )
-
     position: Mapped[int] = mapped_column(
         Integer, default=0, nullable=False, comment="Display order within team projects"
     )
-
-    # Progress tracking
     estimated_hours: Mapped[int | None] = mapped_column(
         Integer, nullable=True, comment="Estimated project duration in hours"
     )

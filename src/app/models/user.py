@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import BaseModel, TimestampMixin, utc_now
+from ..utils.dates import utc_now
+from .base import BaseModel, TimestampMixin
 
 if TYPE_CHECKING:
     from .task import TaskAssignmentModel, TaskModel

@@ -18,7 +18,7 @@ The models are organized by domain:
 - base.py: Base model class and mixins
 """
 
-from .base import AuditMixin, BaseModel, TimestampMixin, UserTimestampMixin, utc_now
+from .base import AuditMixin, BaseModel, TimestampMixin, UserTimestampMixin
 
 # Import all enum types
 from .enums import (
@@ -43,7 +43,6 @@ __all__ = [
     "TimestampMixin",
     "AuditMixin",
     "UserTimestampMixin",
-    "utc_now",
     # Enums
     "TeamRoleEnum",
     "TaskStatusEnum",
