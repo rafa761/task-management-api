@@ -1,8 +1,8 @@
 # app/core/config.py
 from functools import lru_cache
 
-from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # Security Settings
-    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8080"]
+    ALLOWED_HOSTS: str = Field(default="localhost,127.0.0.1")
+    ALLOWED_ORIGINS: str = Field(default="http://localhost:3000,http://localhost:8080")
 
     # Database Configuration
     DATABASE_URL: str | None = None
@@ -44,14 +44,6 @@ class Settings(BaseSettings):
             raise ValueError(f"Environment must be one of: {allowed}")
         return value
 
-    @field_validator("ALLOWED_HOSTS", "ALLOWED_ORIGINS", mode="before")
-    @classmethod
-    def parse_comma_separated_string(cls, value: str | list[str]) -> list[str]:
-        """Parse comma-separated string into list"""
-        if isinstance(value, str):
-            return [item.strip() for item in value.split(",") if item.strip()]
-        return value
-
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
         if (
@@ -61,11 +53,25 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY must be changed in production")
         return self
 
-    model_config = {
-        "env_file": ".env",
-        "case_sensitive": True,
-        "extra": "ignore",
-    }
+    @property
+    def allowed_hosts_list(self) -> list[str]:
+        """Convert ALLOWED_HOSTS string to list."""
+        return [host.strip() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        """Convert ALLOWED_ORIGINS string to list."""
+        return [
+            origin.strip()
+            for origin in self.ALLOWED_ORIGINS.split(",")
+            if origin.strip()
+        ]
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
 
 @lru_cache

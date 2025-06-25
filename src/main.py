@@ -1,8 +1,8 @@
 # main.py
 import uvicorn
 
-from src.app.core.config import get_settings
-from src.app.core.factory import create_app
+from app.core.config import get_settings
+from app.core.factory import create_app
 
 # Create the FastAPI application instance using the factory pattern
 app = create_app()

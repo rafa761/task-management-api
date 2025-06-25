@@ -33,14 +33,14 @@ def create_app() -> FastAPI:
     # Security Middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origins=settings.allowed_origins_list,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
         allow_headers=["*"],
     )
 
     # Health check endpoint
-    @app.get("/health", tags=["system"])
+    @app.get("/health", tags=["system"], summary="Health Check")
     async def health_check():
         """
         Health check endpoint for load balancers and monitoring systems.
@@ -49,16 +49,21 @@ def create_app() -> FastAPI:
             "status": "healthy",
             "version": "1.0.0",
             "environment": settings.ENVIRONMENT,
+            "debug": settings.DEBUG,
         }
 
     # Root endpoint
-    @app.get("/", tags=["system"])
+    @app.get("/", tags=["system"], summary="API Information")
     async def root():
         """API root endpoint with basic information."""
         return {
             "message": "Task Management API",
             "version": "1.0.0",
-            "docs": "/docs" if settings.DEBUG else "Documentation disabled",
+            "environment": settings.ENVIRONMENT,
+            "docs": "/docs"
+            if settings.DEBUG
+            else "Documentation disabled in production",
+            "health": "/health",
         }
 
     return app
