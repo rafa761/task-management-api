@@ -730,3 +730,6 @@ cython_debug/
 
 # Project structure files
 project-structure.txt
+
+# Claude control file
+CLAUDE.md
