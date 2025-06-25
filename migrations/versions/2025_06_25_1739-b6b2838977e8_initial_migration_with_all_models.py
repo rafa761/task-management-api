@@ -1,17 +1,19 @@
-"""initial migration with all models
+"""Initial migration with all models
 
-Revision ID: d9651b8ea85b
+Revision ID: b6b2838977e8
 Revises:
-Create Date: 2025-06-25 16:20:23.257411+00:00
+Create Date: 2025-06-25 17:39:20.686546+00:00
 
 """
+from typing import Union
 from collections.abc import Sequence
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision: str = 'd9651b8ea85b'
+revision: str = 'b6b2838977e8'
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -76,7 +78,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.UUID(), nullable=False, comment='User who is a member of the team'),
     sa.Column('team_id', sa.UUID(), nullable=False, comment='Team that the user belongs to'),
     sa.Column('role', sa.Enum('OWNER', 'ADMIN', 'MEMBER', 'VIEWER', name='teamroleenum'), nullable=False, comment="User's role and permissions within the team"),
-    sa.Column('invited_at', sa.DateTime(timezone=True), server_default='now()', nullable=False, comment='When the user was invited to the team'),
+    sa.Column('invited_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='When the user was invited to the team'),
     sa.Column('joined_at', sa.DateTime(timezone=True), nullable=True, comment='When the user accepted the invitation (null = pending)'),
     sa.Column('invited_by_id', sa.UUID(), nullable=True, comment='User who sent the invitation'),
     sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True, comment='When the membership was deactivated'),

@@ -13,7 +13,7 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class Base(DeclarativeBase):
+class BaseModel(DeclarativeBase):
     """
     Base class for all database models.
 

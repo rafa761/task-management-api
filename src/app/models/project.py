@@ -25,16 +25,16 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin, utc_now
+from .base import BaseModel, TimestampMixin, utc_now
 from .enums import ProjectStatusEnum
 
 # Avoid circular imports
 if TYPE_CHECKING:
-    from .task import Task
-    from .team import Team
+    from .task import TaskModel
+    from .team import TeamModel
 
 
-class Project(Base, TimestampMixin):
+class ProjectModel(BaseModel, TimestampMixin):
     """
     Project entity for grouping tasks within teams.
 
@@ -113,14 +113,14 @@ class Project(Base, TimestampMixin):
     )
 
     # Relationships
-    team: Mapped["Team"] = relationship("Team", back_populates="projects")
+    team: Mapped["TeamModel"] = relationship("TeamModel", back_populates="projects")
 
-    tasks: Mapped[list["Task"]] = relationship(
-        "Task",
+    tasks: Mapped[list["TaskModel"]] = relationship(
+        "TaskModel",
         back_populates="project",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        order_by="Task.position, Task.created_at",
+        order_by="TaskModel.position, TaskModel.created_at",
     )
 
     # Constraints
@@ -193,15 +193,15 @@ class Project(Base, TimestampMixin):
             self.status = ProjectStatusEnum.ACTIVE
 
     # Task management helpers
-    def get_active_tasks(self) -> list["Task"]:
+    def get_active_tasks(self) -> list["TaskModel"]:
         """Get all active (non-completed) tasks in this project."""
         return [task for task in self.tasks if task.status.is_active()]
 
-    def get_completed_tasks(self) -> list["Task"]:
+    def get_completed_tasks(self) -> list["TaskModel"]:
         """Get all completed tasks in this project."""
         return [task for task in self.tasks if task.status.is_completed()]
 
-    def get_overdue_tasks(self) -> list["Task"]:
+    def get_overdue_tasks(self) -> list["TaskModel"]:
         """Get all overdue tasks in this project."""
         now = utc_now()
         return [
@@ -219,6 +219,6 @@ class Project(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return (
-            f"<Project(id='{self.id}', name='{self.name}', "
+            f"<ProjectModel(id='{self.id}', name='{self.name}', "
             f"status='{self.status.value}', team_id='{self.team_id}')>"
         )

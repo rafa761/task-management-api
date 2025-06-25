@@ -8,14 +8,14 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
+from app.models import UserModel
 
 
 class TestUserModel:
     """Test User model functionality"""
 
     async def test_create_user(self, db_session: AsyncSession, sample_user_data):
-        user = User(**sample_user_data)
+        user = UserModel(**sample_user_data)
         db_session.add(user)
         await db_session.commit()
 
@@ -29,7 +29,7 @@ class TestUserModel:
 
     async def test_update_last_login(self, db_session: AsyncSession, sample_user_data):
         """Test updating last login timestamp"""
-        user = User(**sample_user_data)
+        user = UserModel(**sample_user_data)
         db_session.add(user)
         await db_session.commit()
 

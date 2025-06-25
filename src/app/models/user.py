@@ -12,15 +12,15 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin, utc_now
+from .base import BaseModel, TimestampMixin, utc_now
 
 # Avoid circular imports with TYPE_CHECKING
 if TYPE_CHECKING:
-    from .task import Task, TaskAssignment
-    from .team import TeamMembership
+    from .task import TaskAssignmentModel, TaskModel
+    from .team import TeamMembershipModel
 
 
-class User(Base, TimestampMixin):
+class UserModel(BaseModel, TimestampMixin):
     """
     User entity representing system users.
 
@@ -89,26 +89,26 @@ class User(Base, TimestampMixin):
     )
 
     # Relationships (using string references to avoid circular imports)
-    team_memberships: Mapped[list["TeamMembership"]] = relationship(
-        "TeamMembership",
+    team_memberships: Mapped[list["TeamMembershipModel"]] = relationship(
+        "TeamMembershipModel",
         back_populates="user",
         foreign_keys="TeamMembership.user_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
-    assigned_tasks: Mapped[list["TaskAssignment"]] = relationship(
-        "TaskAssignment",
+    assigned_tasks: Mapped[list["TaskAssignmentModel"]] = relationship(
+        "TaskAssignmentModel",
         back_populates="assignee",
-        foreign_keys="TaskAssignment.assignee_id",
+        foreign_keys="TaskAssignmentModel.assignee_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
-    created_tasks: Mapped[list["Task"]] = relationship(
-        "Task",
+    created_tasks: Mapped[list["TaskModel"]] = relationship(
+        "TaskModel",
         back_populates="creator",
-        foreign_keys="Task.creator_id",
+        foreign_keys="TaskModel.creator_id",
         passive_deletes=True,
     )
 

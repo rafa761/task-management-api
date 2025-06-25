@@ -27,17 +27,17 @@ from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from .base import Base, TimestampMixin, utc_now
+from .base import BaseModel, TimestampMixin, utc_now
 from .enums import TaskPriorityEnum, TaskStatusEnum
 
 # Avoid circular imports
 if TYPE_CHECKING:
-    from .project import Project
-    from .team import Team
-    from .user import User
+    from .project import ProjectModel
+    from .team import TeamModel
+    from .user import UserModel
 
 
-class Task(Base, TimestampMixin):
+class TaskModel(BaseModel, TimestampMixin):
     """
     Core Task entity with rich metadata and relationships.
 
@@ -144,33 +144,35 @@ class Task(Base, TimestampMixin):
     )
 
     # Relationships
-    team: Mapped["Team"] = relationship("Team")
-    project: Mapped["Project"] = relationship("Project", back_populates="tasks")
-    creator: Mapped["User"] = relationship(
-        "User", back_populates="created_tasks", foreign_keys=[creator_id]
+    team: Mapped["TeamModel"] = relationship("TeamModel")
+    project: Mapped["ProjectModel"] = relationship(
+        "ProjectModel", back_populates="tasks"
+    )
+    creator: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="created_tasks", foreign_keys=[creator_id]
     )
 
     # Many-to-many relationships through association objects
-    assignments: Mapped[list["TaskAssignment"]] = relationship(
-        "TaskAssignment",
+    assignments: Mapped[list["TaskAssignmentModel"]] = relationship(
+        "TaskAssignmentModel",
         back_populates="task",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
     # Task dependencies (tasks this task depends on)
-    dependencies: Mapped[list["TaskDependency"]] = relationship(
-        "TaskDependency",
+    dependencies: Mapped[list["TaskDependencyModel"]] = relationship(
+        "TaskDependencyModel",
         back_populates="dependent_task",
-        foreign_keys="TaskDependency.dependent_task_id",
+        foreign_keys="TaskDependencyModel.dependent_task_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
     # Tasks that depend on this task
-    dependents: Mapped[list["TaskDependency"]] = relationship(
-        "TaskDependency",
-        foreign_keys="TaskDependency.prerequisite_task_id",
+    dependents: Mapped[list["TaskDependencyModel"]] = relationship(
+        "TaskDependencyModel",
+        foreign_keys="TaskDependencyModel.prerequisite_task_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
         overlaps="prerequisite_task",
@@ -248,7 +250,7 @@ class Task(Base, TimestampMixin):
         self.priority = priority
 
     # Assignment management
-    def assign_to_user(self, user_id: UUID) -> "TaskAssignment":
+    def assign_to_user(self, user_id: UUID) -> "TaskAssignmentModel":
         """Assign task to a user."""
         # Check if already assigned
         existing = next((a for a in self.assignments if a.assignee_id == user_id), None)
@@ -256,7 +258,7 @@ class Task(Base, TimestampMixin):
             return existing
 
         # Create new assignment
-        assignment = TaskAssignment(task_id=self.id, assignee_id=user_id)
+        assignment = TaskAssignmentModel(task_id=self.id, assignee_id=user_id)
         self.assignments.append(assignment)
         return assignment
 
@@ -275,7 +277,7 @@ class Task(Base, TimestampMixin):
         return user_id in self.assignee_ids
 
     # Dependency management
-    def add_dependency(self, prerequisite_task: "Task") -> "TaskDependency":
+    def add_dependency(self, prerequisite_task: "TaskModel") -> "TaskDependencyModel":
         """Add a task dependency."""
         # Prevent self-dependency
         if prerequisite_task.id == self.id:
@@ -294,7 +296,7 @@ class Task(Base, TimestampMixin):
             return existing
 
         # Create new dependency
-        dependency = TaskDependency(
+        dependency = TaskDependencyModel(
             dependent_task_id=self.id, prerequisite_task_id=prerequisite_task.id
         )
         self.dependencies.append(dependency)
@@ -326,12 +328,12 @@ class Task(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return (
-            f"<Task(id='{self.id}', title='{self.title}', "
+            f"<TaskModel(id='{self.id}', title='{self.title}', "
             f"status='{self.status.value}', team_id='{self.team_id}')>"
         )
 
 
-class TaskAssignment(Base):
+class TaskAssignmentModel(BaseModel):
     """
     Task assignment tracking who is working on what.
 
@@ -378,12 +380,12 @@ class TaskAssignment(Base):
     )
 
     # Relationships
-    task: Mapped[Task] = relationship("Task", back_populates="assignments")
-    assignee: Mapped["User"] = relationship(
-        "User", back_populates="assigned_tasks", foreign_keys=[assignee_id]
+    task: Mapped[TaskModel] = relationship("TaskModel", back_populates="assignments")
+    assignee: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="assigned_tasks", foreign_keys=[assignee_id]
     )
-    assigned_by: Mapped["User | None"] = relationship(
-        "User", foreign_keys=[assigned_by_id]
+    assigned_by: Mapped["UserModel | None"] = relationship(
+        "UserModel", foreign_keys=[assigned_by_id]
     )
 
     # Constraints
@@ -393,12 +395,12 @@ class TaskAssignment(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<TaskAssignment(task_id='{self.task_id}', "
+            f"<TaskAssignmentModel(task_id='{self.task_id}', "
             f"assignee_id='{self.assignee_id}')>"
         )
 
 
-class TaskDependency(Base):
+class TaskDependencyModel(BaseModel):
     """
     Task dependency relationships for workflow management.
 
@@ -445,14 +447,14 @@ class TaskDependency(Base):
     )
 
     # Relationships
-    dependent_task: Mapped[Task] = relationship(
-        "Task", back_populates="dependencies", foreign_keys=[dependent_task_id]
+    dependent_task: Mapped[TaskModel] = relationship(
+        "TaskModel", back_populates="dependencies", foreign_keys=[dependent_task_id]
     )
-    prerequisite_task: Mapped[Task] = relationship(
-        "Task", foreign_keys=[prerequisite_task_id]
+    prerequisite_task: Mapped[TaskModel] = relationship(
+        "TaskModel", foreign_keys=[prerequisite_task_id]
     )
-    created_by: Mapped["User | None"] = relationship(
-        "User", foreign_keys=[created_by_id]
+    created_by: Mapped["UserModel | None"] = relationship(
+        "UserModel", foreign_keys=[created_by_id]
     )
 
     # Constraints
@@ -472,6 +474,6 @@ class TaskDependency(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<TaskDependency(dependent='{self.dependent_task_id}', "
+            f"<TaskDependencyModel(dependent='{self.dependent_task_id}', "
             f"prerequisite='{self.prerequisite_task_id}')>"
         )

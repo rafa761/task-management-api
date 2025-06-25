@@ -10,7 +10,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.models import Base
+from app.models import BaseModel
 
 
 @pytest_asyncio.fixture
@@ -31,7 +31,7 @@ async def db_session():
 
     # Create all tables
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(BaseModel.metadata.create_all)
 
     # Create session factory
     async_session = async_sessionmaker(engine, expire_on_commit=False)
