@@ -6,18 +6,21 @@ This script automatically adds/updates file path comments on the first line
 of Python files within the 'src' directory structure.
 
 Usage:
-    python scripts/add_file_paths.py [--check] [--fix] [--verbose]
-
-Examples:
-    python scripts/add_file_paths.py --fix          # Add/update comments
-    python scripts/add_file_paths.py --check        # Check consistency only
-    python scripts/add_file_paths.py --fix --verbose # With detailed output
+    python scripts/add_file_paths.py check          # Check consistency only
+    python scripts/add_file_paths.py fix            # Add/update comments
+    python scripts/add_file_paths.py fix --verbose  # With detailed output
 """
 
-import argparse
 import re
-import sys
 from pathlib import Path
+from typing import Annotated
+
+import typer
+
+app = typer.Typer(
+    help="Automatically add/update file path comments in Python files",
+    add_completion=False,
+)
 
 
 class FilePathCommenter:
@@ -35,7 +38,7 @@ class FilePathCommenter:
     def log(self, message: str, level: str = "INFO") -> None:
         """Log messages if verbose mode is enabled."""
         if self.verbose:
-            print(f"[{level}] {message}")
+            typer.echo(f"[{level}] {message}")
 
     def get_relative_path(self, file_path: Path) -> str:
         """
@@ -51,8 +54,7 @@ class FilePathCommenter:
             # Get path relative to src directory
             relative_path = file_path.relative_to(self.src_dir)
             # Convert to forward slashes for comment
-            comment_path = str(relative_path).replace("\\", "/")
-            return comment_path
+            return str(relative_path).replace("\\", "/")
         except ValueError as e:
             self.log(f"Error getting relative path for {file_path}: {e}", "ERROR")
             self.errors.append(f"Path error: {file_path}")
@@ -229,7 +231,7 @@ class FilePathCommenter:
         """
         python_files = self.find_python_files()
         if not python_files:
-            print("No Python files found to process")
+            typer.echo("No Python files found to process")
             return 0 if not self.errors else 1
 
         files_needing_fix = []
@@ -243,80 +245,72 @@ class FilePathCommenter:
         # Report results
         if check_mode:
             if files_needing_fix:
-                print(f"\n❌ {len(files_needing_fix)} files need path comment fixes:")
+                typer.echo(
+                    f"\n❌ {len(files_needing_fix)} files need path comment fixes:"
+                )
                 for file_path in files_needing_fix:
-                    print(f"  - {file_path}")
-                print("\nRun with --fix to automatically update these files")
+                    typer.echo(f"  - {file_path}")
+                typer.echo(
+                    "\nRun 'python scripts/add_file_paths.py fix' to automatically update these files"
+                )
                 return 1
-            else:
-                print("✅ All files have correct path comments")
-                return 0
+            typer.echo("✅ All files have correct path comments")
+            return 0
+        if self.modified_files:
+            typer.echo(f"\n✅ Updated {len(self.modified_files)} files:")
+            for file_path in self.modified_files:
+                typer.echo(f"  - {file_path}")
         else:
-            if self.modified_files:
-                print(f"\n✅ Updated {len(self.modified_files)} files:")
-                for file_path in self.modified_files:
-                    print(f"  - {file_path}")
-            else:
-                print("✅ No files needed updates")
+            typer.echo("✅ No files needed updates")
 
         if self.errors:
-            print(f"\n⚠ {len(self.errors)} errors occurred:")
+            typer.echo(f"\n⚠ {len(self.errors)} errors occurred:")
             for error in self.errors:
-                print(f"  - {error}")
+                typer.echo(f"  - {error}")
             return 1
 
         return 0
 
 
+@app.command()
+def check(
+    src_dir: Annotated[
+        str, typer.Option("--src-dir", help="Source directory to process")
+    ] = "src",
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Show detailed progress information")
+    ] = False,
+):
+    """Check if files have correct path comments without modifying them."""
+    commenter = FilePathCommenter(src_dir=src_dir, verbose=verbose)
+    exit_code = commenter.run(check_mode=True)
+    raise typer.Exit(exit_code)
+
+
+@app.command()
+def fix(
+    src_dir: Annotated[
+        str, typer.Option("--src-dir", help="Source directory to process")
+    ] = "src",
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Show detailed progress information")
+    ] = False,
+):
+    """Automatically add/update path comments in Python files."""
+    commenter = FilePathCommenter(src_dir=src_dir, verbose=verbose)
+    exit_code = commenter.run(check_mode=False)
+    raise typer.Exit(exit_code)
+
+
+@app.callback()
 def main():
-    """Main entry point for the script."""
-    parser = argparse.ArgumentParser(
-        description="Automatically add/update file path comments in Python files",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s --check         Check if files have correct path comments
-  %(prog)s --fix           Add/update path comments in files
-  %(prog)s --fix --verbose Show detailed progress information
-        """,
-    )
+    """
+    File Path Comment Automation Tool
 
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Check for inconsistencies without modifying files",
-    )
-
-    parser.add_argument(
-        "--fix", action="store_true", help="Automatically add/update path comments"
-    )
-
-    parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Show detailed progress information",
-    )
-
-    parser.add_argument(
-        "--src-dir", default="src", help="Source directory to process (default: src)"
-    )
-
-    args = parser.parse_args()
-
-    # Validate arguments
-    if not args.check and not args.fix:
-        parser.error("Must specify either --check or --fix")
-
-    if args.check and args.fix:
-        parser.error("Cannot specify both --check and --fix")
-
-    # Run the automation
-    commenter = FilePathCommenter(src_dir=args.src_dir, verbose=args.verbose)
-
-    exit_code = commenter.run(check_mode=args.check)
-    sys.exit(exit_code)
+    Automatically adds/updates file path comments on the first line
+    of Python files within the 'src' directory structure.
+    """
 
 
 if __name__ == "__main__":
-    main()
+    app()

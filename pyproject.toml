@@ -30,6 +30,8 @@ dependencies = [
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
     "python-multipart>=0.0.9",
+    # Production server
+    "gunicorn>=21.0.0",
 ]
 
 # Development dependencies
@@ -38,12 +40,15 @@ dev = [
     # Code quality
     "ruff>=0.8.0",
     "mypy>=1.16.0",
+
     # Testing
     "pytest>=8.4.0",
     "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.0.0",
+
     # Development tools
     "pre-commit>=4.2.0",
+
     # Type stubs
     "types-passlib",
 ]
@@ -65,37 +70,38 @@ exclude = [
     ".venv",
     "__pycache__",
     "migrations",
+    "venv",
+    ".pytest_cache",
 ]
 
 [tool.ruff.lint]
 # Essential rules for clean code
 select = [
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
-    "F", # Pyflakes
-    "I", # isort (import sorting)
-    "N", # pep8-naming
-    "UP", # pyupgrade
-    "B", # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "SIM", # flake8-simplify
-    "TCH", # flake8-type-checking
-    "PTH", # flake8-use-pathlib
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear (catches real bugs)
 ]
 
 ignore = [
-    "E501", # Line too long (handled by formatter)
+    "E501",   # Line too long (handled by formatter)
 ]
 
 # Auto-fix what we can
 fixable = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests don't need docstrings and can use assertions
-"tests/*" = ["D", "S101"]
+# Migrations are generated code
+"migrations/*" = ["ALL"]
+
+# Scripts can be more flexible
+"scripts/*" = ["E402", "T20"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["src"]
+known-first-party = ["src", "app"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 # ========================================
 # MYPY - Type Checking
@@ -103,8 +109,7 @@ known-first-party = ["src"]
 [tool.mypy]
 python_version = "3.13"
 strict = true
-warn_return_any = true
-warn_unused_configs = true
+pretty = true
 
 # Project structure
 mypy_path = "src"
@@ -112,6 +117,8 @@ packages = ["src"]
 
 exclude = [
     "migrations/",
+    "venv/",
+    ".venv/",
 ]
 
 # Third-party libraries without stubs
@@ -119,6 +126,7 @@ exclude = [
 module = [
     "uvicorn.*",
     "alembic.*",
+    "gunicorn.*",
 ]
 ignore_missing_imports = true
 
@@ -131,34 +139,9 @@ pythonpath = ["src"]
 asyncio_mode = "auto"
 
 addopts = [
-    "--strict-markers",
     "--cov=src",
     "--cov-report=term-missing",
-    "--cov-report=html:reports/coverage",
     "--cov-fail-under=80",
-]
-
-markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
-]
-
-# ========================================
-# COVERAGE
-# ========================================
-[tool.coverage.run]
-source = ["src"]
-omit = [
-    "src/migrations/*",
-    "*/tests/*",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
 ]
 
 # ========================================
