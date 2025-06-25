@@ -133,6 +133,18 @@ class Settings(BaseSettings):
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{test_db_name}"
         )
 
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
+    @property
+    def is_staging(self) -> bool:
+        return self.ENVIRONMENT == "staging"
+
+    @property
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT == "development"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
