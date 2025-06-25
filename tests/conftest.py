@@ -48,7 +48,7 @@ async def db_session():
 def sample_user_data():
     """Sample user data for tests."""
     return {
-        "email": "test@example.com",
+        "email": "meg@example.com",
         "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBkpx5NNOp7QUW",
         "first_name": "Meg",
         "last_name": "Ferreira",

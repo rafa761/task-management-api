@@ -1,4 +1,5 @@
 # app/models/base.py
+
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 

@@ -14,7 +14,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel, TimestampMixin, utc_now
 
-# Avoid circular imports with TYPE_CHECKING
 if TYPE_CHECKING:
     from .task import TaskAssignmentModel, TaskModel
     from .team import TeamMembershipModel
@@ -92,7 +91,7 @@ class UserModel(BaseModel, TimestampMixin):
     team_memberships: Mapped[list["TeamMembershipModel"]] = relationship(
         "TeamMembershipModel",
         back_populates="user",
-        foreign_keys="TeamMembership.user_id",
+        foreign_keys="TeamMembershipModel.user_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
@@ -117,12 +116,6 @@ class UserModel(BaseModel, TimestampMixin):
     def full_name(self) -> str:
         """Get user's full name for display purposes."""
         return f"{self.first_name} {self.last_name}".strip()
-
-    @property
-    def display_name(self) -> str:
-        """Get user's display name (full name or email if name not available)."""
-        full_name = self.full_name
-        return full_name if full_name else self.email
 
     @property
     def initials(self) -> str:
