@@ -1,0 +1,168 @@
+# pyproject.toml - Clean Portfolio ProjectModel Configuration
+# Task Management API - Portfolio ProjectModel
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "task-management-api"
+version = "1.0.0"
+description = "Task Management API with FastAPI - Portfolio ProjectModel"
+readme = "README.md"
+authors = [
+    { name = "Rafael Ferreira", email = "rafaelferreira761@gmail.com" }
+]
+requires-python = ">=3.10"
+
+# Core dependencies
+dependencies = [
+    "fastapi>=0.115.13",
+    "uvicorn[standard]>=0.34.3",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    # Database
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    # Authentication
+    "pyjwt>=2.10.1",
+    "python-multipart>=0.0.20",
+]
+
+# Development dependencies
+[project.optional-dependencies]
+dev = [
+    # Code quality
+    "ruff>=0.12.0",
+    "mypy>=1.16.0",
+
+    # Testing
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
+    "httpx>=0.28.1",
+
+    # Development tools
+    "pre-commit>=4.2.0",
+
+    # Type stubs
+    "types-passlib>=1.7.7",
+]
+
+[project.urls]
+Repository = "https://github.com/rafa761/team-task-management-api"
+
+# ========================================
+# RUFF - Linting and Formatting
+# ========================================
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "migrations",
+    "venv",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+# Essential rules for clean code
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear (catches real bugs)
+]
+
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+]
+
+# Auto-fix what we can
+fixable = ["ALL"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependencies são tratadas como imutáveis para resolver B008
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Security",
+    "Depends",  # Para importações diretas
+    "Query",    # Para importações diretas
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Migrations are generated code
+"migrations/*" = ["ALL"]
+
+# Scripts can be more flexible
+"scripts/*" = ["E402", "T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "app"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+# ========================================
+# MYPY - Type Checking
+# ========================================
+[tool.mypy]
+python_version = "3.13"
+strict = true
+pretty = true
+
+# ProjectModel structure
+mypy_path = "src"
+packages = ["src"]
+
+exclude = [
+    "migrations/",
+    "venv/",
+    ".venv/",
+]
+
+# Third-party libraries without stubs
+[[tool.mypy.overrides]]
+module = [
+    "uvicorn.*",
+    "alembic.*",
+    "gunicorn.*",
+]
+ignore_missing_imports = true
+
+# ========================================
+# PYTEST - Testing
+# ========================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+addopts = [
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "-v",
+]
+
+# ========================================
+# SETUPTOOLS
+# ========================================
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

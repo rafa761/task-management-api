@@ -1,0 +1,53 @@
+# Multi-stage build for efficiency and security
+FROM python:3.13.3-slim-bookworm AS base
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies in a single layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # PostgreSQL client library headers - required for psycopg2
+    libpq-dev=15.* \
+    # C compiler - required for building Python packages
+    gcc=4:12.* \
+    # HTTP client for health checks and downloads
+    curl=7.88.* \
+    # Clean up apt cache to reduce image size
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Upgrade pip to latest version
+RUN pip install --no-cache-dir --upgrade pip==25.1.1
+
+# Development stage
+FROM base AS development
+
+# Copy requirements files
+COPY requirements.txt requirements-dev.txt ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Create a non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy source code and set permissions
+COPY --chown=appuser:appuser . .
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Development command with hot reload
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

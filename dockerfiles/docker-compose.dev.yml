@@ -1,0 +1,55 @@
+services:
+  app:
+    container_name: task-management-app
+    build:
+      context: ..
+      dockerfile: dockerfiles/Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/app/src
+      - ../tests:/app/tests
+    env_file:
+      - ../.env
+    environment:
+      # Override database host for Docker networking
+      - POSTGRES_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - task_management_network
+    restart: unless-stopped
+
+  db:
+    container_name: postgres-db
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-task_management_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - task_management_network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-task_management_db}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+
+networks:
+  task_management_network:
+    driver: bridge
