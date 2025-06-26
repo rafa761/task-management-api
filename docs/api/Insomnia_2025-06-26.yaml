@@ -1,0 +1,395 @@
+type: collection.insomnia.rest/5.0
+name: api
+meta:
+  id: wrk_6fb30b0e5ef64bd0a7693019886c328d
+  created: 1750938455166
+  modified: 1750938455166
+  description: ""
+collection:
+  - name: Auth
+    meta:
+      id: fld_5dacadd0e498434c87bd9f98eae8030c
+      created: 1750942608727
+      modified: 1750942715165
+      sortKey: -1750942712647
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/api/v1/auth/register"
+        name: Register
+        meta:
+          id: req_9f07ba771f984a5db4698f908f57c979
+          created: 1750938479609
+          modified: 1750942638322
+          isPrivate: false
+          description: |-
+            Register a new user.
+
+            - **email**: Valid email address
+            - **username**: Unique username (3-50 characters)
+            - **full_name**: User's full name (2-100 characters)
+            - **password**: Strong password (minimum 8 characters)
+          sortKey: -1750942624147
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "meg@gmail.com",
+              "username": "meg",
+              "full_name": "Meg Ferreira",
+              "password": "12345678"
+            }
+        headers:
+          - name: Content-Type
+            disabled: false
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/auth/login"
+        name: Login
+        meta:
+          id: req_834a6ccb8730423988d6f5fafd6d7987
+          created: 1750938479611
+          modified: 1750942643617
+          isPrivate: false
+          description: |-
+            Login user and return access/refresh tokens.
+
+            - **email**: User's email address
+            - **password**: User's password
+          sortKey: -1750942624122
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "meg@gmail.com",
+              "password": "12345678"
+            }
+        headers:
+          - name: Content-Type
+            disabled: false
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/auth/refresh"
+        name: Refresh Token
+        meta:
+          id: req_5e5911fea79b41d9b9b5facdd84f7485
+          created: 1750938479613
+          modified: 1750942827357
+          isPrivate: false
+          description: |-
+            Refresh access token using refresh token.
+
+            - **refresh_token**: Valid refresh token
+          sortKey: -1750942624097
+        method: POST
+        parameters:
+          - name: refresh_token
+            disabled: false
+            value: "{{ _.refreshToken }}"
+            id: pair_79b1802d96984ebe808ed8929f2923e5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Tasks
+    meta:
+      id: fld_a13896b40ee74e04bcb9c78f8b05ce03
+      created: 1750942655128
+      modified: 1750942718071
+      sortKey: -1750942712597
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/api/v1/tasks/"
+        name: Create Task
+        meta:
+          id: req_e28fcb1d3f2a4744872a5d07996251e8
+          created: 1750938479616
+          modified: 1750953982527
+          isPrivate: false
+          description: |-
+            Create a new task.
+
+            - **title**: Task title (required)
+            - **description**: Task description (optional)
+            - **priority**: Task priority (low, medium, high)
+            - **due_date**: Task due date (optional)
+          sortKey: -1750942666240
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "title": "Second task",
+              "description": "Task description",
+              "priority": "high",
+              "due_date": null
+            }
+        headers:
+          - name: Content-Type
+            disabled: false
+            value: application/json
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+          disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/tasks/"
+        name: Get Tasks
+        meta:
+          id: req_c1e7c0ac6e3b48fab7de7392a8ef9781
+          created: 1750938479617
+          modified: 1750942675733
+          isPrivate: false
+          description: |-
+            Get all tasks for the current user.
+
+            - **status**: Filter by task status (optional)
+            - **skip**: Number of tasks to skip for pagination
+            - **limit**: Maximum number of tasks to return
+          sortKey: -1750942666140
+        method: GET
+        parameters:
+          - name: status_filter
+            disabled: true
+            value: "null"
+          - name: skip
+            disabled: true
+            value: "0"
+          - name: limit
+            disabled: true
+            value: "100"
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/tasks/{{ _.task_id }}"
+        name: Get Task
+        meta:
+          id: req_84c5f6e30ed04fa79884e83cb82a935c
+          created: 1750938479619
+          modified: 1750942697902
+          isPrivate: false
+          description: Get a specific task by ID.
+          sortKey: -1750942666127.5
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/tasks/{{ _.task_id }}"
+        name: Update Task
+        meta:
+          id: req_a54b45e545f74471a77239c628a43513
+          created: 1750938479620
+          modified: 1750954094431
+          isPrivate: false
+          description: Update a specific task.
+          sortKey: -1750942666115
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "title": "Third Task",
+              "description": "Random rescription",
+              "status": "in_progress",
+              "priority": "low",
+              "due_date": null
+            }
+        headers:
+          - name: Content-Type
+            disabled: false
+            value: application/json
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/tasks/{{ _.task_id }}"
+        name: Delete Task
+        meta:
+          id: req_3a736ec2c2214964b836e2be6edabef2
+          created: 1750938479621
+          modified: 1750942695648
+          isPrivate: false
+          description: Delete a specific task.
+          sortKey: -1750942666102.5
+        method: DELETE
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Users
+    meta:
+      id: fld_dde4500a29144b119b34662951376ba5
+      created: 1750942712547
+      modified: 1750942712547
+      sortKey: -1750942712547
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/api/v1/users/me"
+        name: Get Current User Info
+        meta:
+          id: req_dfa7aa433fe8463c91abd34fd8b0363f
+          created: 1750938479614
+          modified: 1750942750840
+          isPrivate: false
+          description: Get current user information.
+          sortKey: -1750942728295
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/users/me"
+        name: Update Current User
+        meta:
+          id: req_a7130c398bf14daa8d354c9ace43f803
+          created: 1750938479615
+          modified: 1750942748950
+          isPrivate: false
+          description: Update current user information.
+          sortKey: -1750942728195
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "full_name": null,
+              "email": null
+            }
+        headers:
+          - name: Content-Type
+            disabled: false
+            value: application/json
+        authentication:
+          type: bearer
+          token: "{{ _.bearerToken }}"
+          prefix: ""
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - url: "{{ _.base_url }}/health"
+    name: Health Check
+    meta:
+      id: req_668c41794e6546c5acd7d197bd219041
+      created: 1750938479623
+      modified: 1750938479623
+      isPrivate: false
+      description: Health check endpoint.
+      sortKey: -1750938479623
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_043ef3f52a36688dd8b808d699cf9fb779f74f72
+    created: 1750938455197
+    modified: 1750938455197
+environments:
+  name: Base Environment
+  meta:
+    id: env_043ef3f52a36688dd8b808d699cf9fb779f74f72
+    created: 1750938455177
+    modified: 1750938479587
+    isPrivate: false
+  data:
+    base_url: "{{ _.scheme }}://{{ _.host }}{{ _.base_path }}"
+  subEnvironments:
+    - name: Develoopment
+      meta:
+        id: env_0dd03e37b1764f17a20fb12add70d00f
+        created: 1750938539855
+        modified: 1750954038745
+        isPrivate: false
+        sortKey: 1750938539855
+      data:
+        scheme: http
+        base_path: ""
+        host: 127.0.0.1:8000
+        bearerToken:
+          "{% response 'body', 'req_834a6ccb8730423988d6f5fafd6d7987',
+          'b64::JC5hY2Nlc3NfdG9rZW4=::46b', 'when-expired', 60 %}"
+        refreshToken:
+          "{% response 'body', 'req_834a6ccb8730423988d6f5fafd6d7987',
+          'b64::JC5yZWZyZXNoX3Rva2Vu::46b', 'never', 60 %}"
+        task_id: 22dc557e-4b1d-46a8-a24e-853588a663b1
+      color: "#0007e0"
