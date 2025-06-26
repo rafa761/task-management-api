@@ -1,123 +1,168 @@
 # tests/conftest.py
-import asyncio
-import logging
-from collections.abc import AsyncGenerator
+"""
+Test configuration and fixtures for the FastAPI application.
+Provides database setup, test client, and authentication fixtures.
+"""
 
-import asyncpg
-import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from collections.abc import AsyncGenerator
+from typing import Any
+
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.factory import create_app
-from app.models.base import BaseModel
+from app.models import BaseModel
 
-# Configurar logging para debug
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+# Test settings
 settings = get_settings()
 
-# Test database engine
-test_engine = create_async_engine(
-    settings.test_database_url,
-    echo=False,
-    poolclass=NullPool,
-)
 
+@pytest_asyncio.fixture(scope="function")
+async def test_engine():
+    """Create test database engine."""
+    test_database_url = settings.test_database_url
 
-async def create_test_database_if_not_exists() -> None:
-    """Create the test database"""
-    test_db_name = settings.POSTGRES_DB + "_test"
-
-    # URL para conectar ao banco postgres padrão (para criar outros bancos)
-    admin_url = (
-        f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
-        f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/postgres"
+    # Create engine for test database
+    engine = create_async_engine(
+        test_database_url,
+        echo=False,  # Set to True for SQL debugging
+        pool_pre_ping=True,
+        pool_recycle=3600,  # Recycle connections after 1 hour
     )
 
-    conn = None
-    try:
-        conn = await asyncpg.connect(admin_url)
-
-        result = await conn.fetchval(
-            "SELECT 1 FROM pg_database WHERE datname = $1", test_db_name
-        )
-
-        if not result:
-            logger.info(f"Creating the test database: {test_db_name}")
-            await conn.execute(f'CREATE DATABASE "{test_db_name}"')
-            logger.info(f"Test database created: {test_db_name}")
-        else:
-            logger.info(f"Test database already exists: {test_db_name}")
-
-    except asyncpg.exceptions.DuplicateDatabaseError:
-        logger.info(f"Test database already exists: {test_db_name}")
-    except Exception as e:
-        logger.error(f"Error creating test database: {e}")
-        raise
-    finally:
-        if conn:
-            await conn.close()
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def setup_test_database():
-    """Setup test database."""
-    await create_test_database_if_not_exists()
-
-    async with test_engine.begin() as conn:
+    # Create all tables
+    async with engine.begin() as conn:
         await conn.run_sync(BaseModel.metadata.create_all)
 
-    yield
+    yield engine
 
-    async with test_engine.begin() as conn:
+    # Clean up
+    async with engine.begin() as conn:
         await conn.run_sync(BaseModel.metadata.drop_all)
 
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def test_session(test_engine) -> AsyncGenerator[AsyncSession]:
+    """Create a test database session with transaction rollback."""
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
+
+    # Create session bound to the connection
+    session = AsyncSession(
+        bind=connection,
+        expire_on_commit=False,
+        autoflush=True,
+        autocommit=False,
+    )
+
     try:
-        await test_engine.dispose()
-
-    except Exception as e:
-        logger.warning(f"Erro durante cleanup: {e}")
-
-
-@pytest.fixture
-async def db_session() -> AsyncGenerator[AsyncSession]:
-    """Create a test database session."""
-    async with AsyncSession(test_engine, expire_on_commit=False) as session:
-        transaction = await session.begin()
-        try:
-            yield session
-        finally:
-            await transaction.rollback()
+        yield session
+    finally:
+        await session.close()
+        # Rollback transaction to clean up
+        await transaction.rollback()
+        await connection.close()
 
 
-@pytest.fixture
-def app(db_session: AsyncSession) -> FastAPI:
-    """Create test FastAPI application."""
-    test_app = create_app()
+@pytest_asyncio.fixture
+async def app_with_test_db(test_session: AsyncSession):
+    """Create FastAPI app with test database dependency override."""
+    app = create_app()
 
     # Override database dependency
-    async def override_get_db():
-        yield db_session
+    async def get_test_db() -> AsyncGenerator[AsyncSession]:
+        yield test_session
 
-    test_app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db] = get_test_db
 
-    return test_app
+    yield app
+
+    # Clean up
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture
-def client(app: FastAPI) -> TestClient:
-    """Create test client."""
-    return TestClient(app)
+@pytest_asyncio.fixture
+async def client(app_with_test_db) -> AsyncGenerator[AsyncClient]:
+    """Create async HTTP client for testing."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_test_db), base_url="http://test"
+    ) as ac:
+        yield ac
+
+
+@pytest_asyncio.fixture
+async def test_user_data() -> dict[str, Any]:
+    """Sample user data for testing."""
+    return {
+        "email": "test@example.com",
+        "username": "testuser",
+        "full_name": "Test User",
+        "password": "testpassword123",
+    }
+
+
+@pytest_asyncio.fixture
+async def create_test_user(
+    client: AsyncClient, test_user_data: dict[str, Any]
+) -> dict[str, Any]:
+    """Create a test user and return user data with ID."""
+    response = await client.post("/api/v1/auth/register", json=test_user_data)
+    assert response.status_code == 201
+
+    user_response = response.json()
+    return {**test_user_data, "id": user_response["id"]}
+
+
+@pytest_asyncio.fixture
+async def auth_headers(
+    client: AsyncClient, test_user_data: dict[str, Any]
+) -> dict[str, str]:
+    """Get authentication headers for test user."""
+    # First register the user
+    await client.post("/api/v1/auth/register", json=test_user_data)
+
+    # Then login to get token
+    login_data = {
+        "email": test_user_data["email"],
+        "password": test_user_data["password"],
+    }
+
+    response = await client.post("/api/v1/auth/login", json=login_data)
+    assert response.status_code == 200
+
+    token_data = response.json()
+    return {"Authorization": f"Bearer {token_data['access_token']}"}
+
+
+@pytest_asyncio.fixture
+async def sample_task_data() -> dict[str, Any]:
+    """Sample task data for testing."""
+    return {
+        "title": "Test Task",
+        "description": "This is a test task",
+        "priority": "medium",
+        "due_date": "2024-12-31T23:59:59",
+    }
+
+
+# Database cleanup fixture to ensure clean state
+@pytest_asyncio.fixture(autouse=True)
+async def clean_database(test_session: AsyncSession):
+    """Clean database before each test."""
+    # This runs before each test
+    yield
+
+    # This runs after each test
+    try:
+        # Clean up any remaining data
+        for table in reversed(BaseModel.metadata.sorted_tables):
+            await test_session.execute(text(f"TRUNCATE TABLE {table.name} CASCADE"))
+        await test_session.commit()
+    except Exception:
+        await test_session.rollback()
