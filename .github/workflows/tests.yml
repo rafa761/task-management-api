@@ -34,7 +34,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -v tests/
+          pytest
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
