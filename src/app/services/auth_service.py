@@ -1,9 +1,11 @@
 # app/services/auth_service.py
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 import bcrypt
 import jwt
 from fastapi import HTTPException, status
+from pydantic import EmailStr
 
 from app.core.config import settings
 from app.models.user import User
@@ -35,9 +37,9 @@ class AuthService:
         """Create JWT access token."""
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = datetime.now(UTC) + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(
+            expire = datetime.now(UTC) + timedelta(
                 minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
             )
 
@@ -48,7 +50,7 @@ class AuthService:
     def create_refresh_token(data: dict) -> str:
         """Create JWT refresh token."""
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         to_encode.update({"exp": expire, "type": "refresh"})
         return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -59,7 +61,7 @@ class AuthService:
             payload = jwt.decode(
                 token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
             )
-            user_id: int = payload.get("sub")
+            user_id: UUID = payload.get("sub")
             email: str = payload.get("email")
             _token_type: str = payload.get("type")
 
@@ -75,12 +77,12 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
             ) from e
-        except jwt.JWTError as e:
+        except jwt.PyJWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             ) from e
 
-    async def authenticate_user(self, email: str, password: str) -> User | None:
+    async def authenticate_user(self, email: EmailStr, password: str) -> User | None:
         """Authenticate user with email and password."""
         user = await self.user_repository.get_by_email(email)
         if not user:
@@ -94,7 +96,7 @@ class AuthService:
 
         return user
 
-    async def login(self, email: str, password: str) -> dict[str, str]:
+    async def login(self, email: EmailStr, password: str) -> dict[str, str]:
         """Login user and return tokens."""
         user = await self.authenticate_user(email, password)
         if not user:
@@ -103,7 +105,7 @@ class AuthService:
                 detail="Incorrect email or password",
             ) from None
 
-        token_data = {"sub": user.id, "email": user.email}
+        token_data = {"sub": str(user.id), "email": user.email}
         access_token = self.create_access_token(token_data)
         refresh_token = self.create_refresh_token(token_data)
 

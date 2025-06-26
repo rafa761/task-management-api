@@ -18,14 +18,14 @@ security = HTTPBearer()
 
 
 # Repository Dependencies
-def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
+def get_user_repository(session: AsyncSession = Depends(get_db)) -> UserRepository:
     """Get user repository instance."""
-    return UserRepository(db)
+    return UserRepository(session)
 
 
-def get_task_repository(db: AsyncSession = Depends(get_db)) -> TaskRepository:
+def get_task_repository(session: AsyncSession = Depends(get_db)) -> TaskRepository:
     """Get task repository instance."""
-    return TaskRepository(db)
+    return TaskRepository(session)
 
 
 # Service Dependencies

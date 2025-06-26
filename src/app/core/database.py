@@ -281,32 +281,3 @@ async def database_lifespan():
         # Shutdown
         logger.info("Closing database connections")
         await db_config.close()
-
-
-# Utility functions for testing
-async def create_test_database() -> None:
-    """Create database schema for testing."""
-    test_engine = create_async_engine(
-        settings.test_database_url,
-        echo=False,
-        poolclass=NullPool,
-    )
-
-    async with test_engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.create_all)
-
-    await test_engine.dispose()
-
-
-async def drop_test_database() -> None:
-    """Drop test database schema."""
-    test_engine = create_async_engine(
-        settings.test_database_url,
-        echo=False,
-        poolclass=NullPool,
-    )
-
-    async with test_engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.drop_all)
-
-    await test_engine.dispose()

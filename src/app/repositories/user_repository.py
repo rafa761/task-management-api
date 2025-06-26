@@ -1,5 +1,5 @@
 # app/repositories/user_repository.py
-
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +14,7 @@ class UserRepository(BaseRepository[User]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, User)
 
-    async def get_by_email(self, email: str) -> User | None:
+    async def get_by_email(self, email: EmailStr) -> User | None:
         """Get user by email."""
         result = await self.session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
@@ -26,7 +26,7 @@ class UserRepository(BaseRepository[User]):
         )
         return result.scalar_one_or_none()
 
-    async def email_exists(self, email: str) -> bool:
+    async def email_exists(self, email: EmailStr) -> bool:
         """Check if email already exists."""
         user = await self.get_by_email(email)
         return user is not None

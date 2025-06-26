@@ -4,7 +4,7 @@
 
 A RESTful API for task management built with **FastAPI**, implementing **Clean Architecture** principles with **Repository Pattern**. The system provides user authentication via JWT tokens and full CRUD operations for task management.
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -59,7 +59,7 @@ A RESTful API for task management built with **FastAPI**, implementing **Clean A
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 task-management-api/
@@ -97,14 +97,15 @@ task-management-api/
 │   └── dependencies.py       # Dependency injection setup
 ├── tests/
 │   ├── conftest.py           # Pytest configuration
-│   ├── test_auth.py          # Authentication tests
-│   └── test_tasks.py         # Task management tests
+│   ├── test_models.py        # Database models tests
+│   ├── test_repositories.py  # Repository tests
+│   └── test_routers.py       # Routers tests
 ├── main.py                   # Application entry point
 ├── requirements.txt          # Project dependencies
 └── README.md                # Project documentation
 ```
 
-## 🔧 Core Components
+## Core Components
 
 ### 1. **Models (Data Layer)**
 
@@ -130,13 +131,13 @@ task-management-api/
 - **UsersRouter**: User profile management
 - **TasksRouter**: CRUD operations for tasks
 
-## 🗄️ Data Models
+## Data Models
 
 ### User Model
 
 ```python
 User {
-    id: int (PK)
+    id: UUID (PK)
     email: str (unique)
     username: str (unique)
     full_name: str
@@ -152,20 +153,20 @@ User {
 
 ```python
 Task {
-    id: int (PK)
+    id: UUID (PK)
     title: str
     description: str (optional)
     status: TaskStatus (todo, in_progress, completed)
     priority: TaskPriority (low, medium, high)
     due_date: datetime (optional)
-    owner_id: int (FK -> User.id)
+    owner_id: UUID (FK -> User.id)
     created_at: datetime
     updated_at: datetime
     owner: User (relationship)
 }
 ```
 
-## 🔐 Security Architecture
+## Security Architecture
 
 ### Authentication Flow
 
@@ -179,8 +180,8 @@ Task {
 2. User Login
    ├── Validate credentials
    ├── Verify password hash
-   ├── Generate JWT access token (30 min expiry)
-   ├── Generate JWT refresh token (7 days expiry)
+   ├── Generate JWT access token
+   ├── Generate JWT refresh token
    └── Return tokens to client
 
 3. Protected Endpoint Access
@@ -194,13 +195,13 @@ Task {
 ### Security Features
 
 - **Password Hashing**: bcrypt with salt
-- **JWT Tokens**: Access (30min) + Refresh (7 days)
+- **JWT Tokens**: Default access (30min) + Refresh (7 days), configurable via .env
 - **Input Validation**: Pydantic schemas
 - **Authorization**: Route-level user authentication
 - **Ownership Validation**: Users can only access their own tasks
 - **CORS Protection**: Configurable allowed origins
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Authentication
 
@@ -234,7 +235,7 @@ GET    /health                  # Health check endpoint
 GET    /docs                    # API documentation (dev only)
 ```
 
-## 🚀 Data Flow Examples
+## Data Flow Examples
 
 ### Task Creation Flow
 
@@ -291,7 +292,7 @@ GET    /docs                    # API documentation (dev only)
    Authorization: Bearer <access_token>
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend Framework
 
@@ -316,7 +317,7 @@ GET    /docs                    # API documentation (dev only)
 - **Pytest-asyncio**: Async testing support
 - **HTTPX**: HTTP client for testing
 
-## 📊 Performance Considerations
+## Performance Considerations
 
 ### Database Optimizations
 
@@ -332,24 +333,6 @@ GET    /docs                    # API documentation (dev only)
 - **Pagination**: Built-in limit/offset pagination
 - **Input Validation**: Early request validation with Pydantic
 
-## 🔄 Deployment Architecture
-
-### Environment Configuration
-
-```
-Development:
-├── SQLite/PostgreSQL local
-├── Debug mode enabled
-├── Auto-reload
-└── Full API documentation
-
-Production:
-├── PostgreSQL with connection pooling
-├── Environment-based configuration
-├── Security headers
-└── Monitoring and logging
-```
-
 ### Scalability Considerations
 
 - **Stateless Design**: JWT tokens enable horizontal scaling
@@ -357,23 +340,7 @@ Production:
 - **Async Architecture**: Non-blocking I/O operations
 - **Microservice Ready**: Clean architecture supports service decomposition
 
-## 🧪 Testing Strategy
-
-### Test Coverage
-
-- **Unit Tests**: Services and repositories
-- **Integration Tests**: API endpoints
-- **Authentication Tests**: JWT token validation
-- **Database Tests**: Model relationships and constraints
-
-### Test Environment
-
-- **Isolated Database**: Separate test database
-- **Fixtures**: Reusable test data setup
-- **Async Testing**: Full async/await support
-- **Mocking**: External dependencies when needed
-
-## 📈 Monitoring & Observability
+## Monitoring & Observability
 
 ### Health Checks
 
@@ -383,14 +350,12 @@ Production:
 
 ### Logging
 
-- **Structured Logging**: JSON format for production
 - **Request Tracing**: Request/response logging
 - **Error Handling**: Comprehensive error logging
-- **Performance Metrics**: Response time tracking
 
 ---
 
-## 🎯 Key Design Decisions
+## Key Design Decisions
 
 1. **Clean Architecture**: Separation of concerns with clear boundaries
 2. **Repository Pattern**: Abstraction of data access logic

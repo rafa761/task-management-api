@@ -54,7 +54,7 @@ async def refresh_token(refresh_token: str, auth_service: AuthServiceDep) -> Tok
             ) from None
 
         # Generate new tokens
-        new_token_data = {"sub": user.id, "email": user.email}
+        new_token_data = {"sub": str(user.id), "email": user.email}
         access_token = auth_service.create_access_token(new_token_data)
         new_refresh_token = auth_service.create_refresh_token(new_token_data)
 

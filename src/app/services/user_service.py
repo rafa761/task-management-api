@@ -1,4 +1,6 @@
 # app/services/user_service.py
+from uuid import UUID
+
 from fastapi import HTTPException, status
 
 from app.models.user import User
@@ -42,7 +44,7 @@ class UserService:
 
         return user
 
-    async def get_user_by_id(self, user_id: int) -> User:
+    async def get_user_by_id(self, user_id: UUID) -> User:
         """Get user by ID."""
         user = await self.user_repository.get_by_id(user_id)
         if not user:
@@ -51,10 +53,18 @@ class UserService:
             )
         return user
 
-    async def update_user(self, user_id: int, user_data: UserUpdate) -> User:
+    async def update_user(self, user_id: UUID, user_data: UserUpdate) -> User:
         """Update user information."""
         # Check if user exists
         existing_user = await self.get_user_by_id(user_id)
+
+        # Check if new username is already taken by another user
+        if user_data.username and user_data.username != existing_user.username:
+            if await self.user_repository.username_exists(user_data.username):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Username already taken",
+                )
 
         # Check if new email is already taken by another user
         if user_data.email and user_data.email != existing_user.email:
