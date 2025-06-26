@@ -32,7 +32,6 @@ jobs:
             src/**/*.py
             tests/**/*.py
             scripts/**/*.py
-            *.py
           separator: ' '
 
       - name: Determine if we should run checks
