@@ -1,5 +1,5 @@
 # app/services/auth_service.py
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
@@ -35,9 +35,9 @@ class AuthService:
         """Create JWT access token."""
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = datetime.now(UTC) + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(
+            expire = datetime.now(UTC) + timedelta(
                 minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
             )
 
@@ -48,7 +48,7 @@ class AuthService:
     def create_refresh_token(data: dict) -> str:
         """Create JWT refresh token."""
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         to_encode.update({"exp": expire, "type": "refresh"})
         return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -103,7 +103,7 @@ class AuthService:
                 detail="Incorrect email or password",
             ) from None
 
-        token_data = {"sub": user.id, "email": user.email}
+        token_data = {"sub": str(user.id), "email": user.email}
         access_token = self.create_access_token(token_data)
         refresh_token = self.create_refresh_token(token_data)
 
