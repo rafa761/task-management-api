@@ -2,6 +2,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -44,7 +45,7 @@ class Task(BaseModel):
     )
 
     # Foreign key to user
-    owner_id: Mapped[int] = mapped_column(
+    owner_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
