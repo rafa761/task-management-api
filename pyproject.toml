@@ -157,6 +157,8 @@ asyncio_mode = "auto"
 addopts = [
     "--cov=src",
     "--cov-report=term-missing",
+    "--cov-report=html",
+    "-v",
 ]
 
 # ========================================
