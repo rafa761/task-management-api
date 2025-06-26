@@ -279,5 +279,5 @@ async def database_lifespan():
         raise
     finally:
         # Shutdown
-        logger.info("Closing database connections.")
+        logger.info("Closing database connections")
         await db_config.close()
