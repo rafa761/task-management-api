@@ -34,11 +34,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest \
-            --cov=src \
-            --cov-report=term-missing \
-            -v \
-            tests/
+          pytest -v tests/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
