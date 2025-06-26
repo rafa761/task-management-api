@@ -1,5 +1,6 @@
 # app/schemas/user.py
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -28,7 +29,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema for user responses."""
 
-    id: int
+    id: UUID
     is_active: bool
     created_at: datetime
     updated_at: datetime

@@ -1,5 +1,6 @@
 # app/schemas/task.py
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -34,7 +35,7 @@ class TaskUpdate(BaseModel):
 class TaskResponse(TaskBase):
     """Schema for task responses."""
 
-    id: int
+    id: UUID
     status: TaskStatus
     owner_id: int
     created_at: datetime

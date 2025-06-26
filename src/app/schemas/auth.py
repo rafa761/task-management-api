@@ -1,4 +1,6 @@
 # app/schemas/auth.py
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -20,5 +22,5 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Token data schema for JWT payload."""
 
-    user_id: int | None = None
+    user_id: UUID | None = None
     email: str | None = None
