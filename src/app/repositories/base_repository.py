@@ -1,6 +1,7 @@
 # app/repositories/base_repository.py
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +25,7 @@ class BaseRepository[ModelType: BaseModel]:
         await self.session.refresh(instance)
         return instance
 
-    async def get_by_id(self, id: int) -> ModelType | None:
+    async def get_by_id(self, id: UUID) -> ModelType | None:
         """Get record by ID."""
         result = await self.session.execute(
             select(self.model).where(self.model.id == id)
@@ -38,7 +39,7 @@ class BaseRepository[ModelType: BaseModel]:
         )
         return result.scalars().all()
 
-    async def update(self, id: int, **kwargs: Any) -> ModelType | None:
+    async def update(self, id: UUID, **kwargs: Any) -> ModelType | None:
         """Update record by ID."""
         # Remove None values
         update_data = {k: v for k, v in kwargs.items() if v is not None}
@@ -52,7 +53,7 @@ class BaseRepository[ModelType: BaseModel]:
         await self.session.commit()
         return await self.get_by_id(id)
 
-    async def delete(self, id: int) -> bool:
+    async def delete(self, id: UUID) -> bool:
         """Delete record by ID."""
         result = await self.session.execute(
             delete(self.model).where(self.model.id == id)
