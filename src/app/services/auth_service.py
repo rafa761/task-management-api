@@ -1,5 +1,6 @@
 # app/services/auth_service.py
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 import bcrypt
 import jwt
@@ -59,7 +60,7 @@ class AuthService:
             payload = jwt.decode(
                 token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
             )
-            user_id: int = payload.get("sub")
+            user_id: UUID = payload.get("sub")
             email: str = payload.get("email")
             _token_type: str = payload.get("type")
 
@@ -75,7 +76,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
             ) from e
-        except jwt.JWTError as e:
+        except jwt.PyJWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             ) from e

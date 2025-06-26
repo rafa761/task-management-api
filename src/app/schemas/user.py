@@ -22,6 +22,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """Schema for user updates."""
 
+    username: str | None = Field(None, min_length=2, max_length=100)
     full_name: str | None = Field(None, min_length=2, max_length=100)
     email: EmailStr | None = None
 

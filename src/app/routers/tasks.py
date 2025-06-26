@@ -1,4 +1,5 @@
 # app/routers/tasks.py
+from uuid import UUID
 
 from fastapi import APIRouter, Query, status
 
@@ -52,7 +53,7 @@ async def get_tasks(
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
-    task_id: int, current_user: CurrentUser, task_service: TaskServiceDep
+    task_id: UUID, current_user: CurrentUser, task_service: TaskServiceDep
 ) -> TaskResponse:
     """Get a specific task by ID."""
     task = await task_service.get_task_by_id(task_id, current_user.id)
@@ -61,7 +62,7 @@ async def get_task(
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(
-    task_id: int,
+    task_id: UUID,
     task_data: TaskUpdate,
     current_user: CurrentUser,
     task_service: TaskServiceDep,
@@ -73,7 +74,7 @@ async def update_task(
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
-    task_id: int, current_user: CurrentUser, task_service: TaskServiceDep
+    task_id: UUID, current_user: CurrentUser, task_service: TaskServiceDep
 ) -> None:
     """Delete a specific task."""
     await task_service.delete_task(task_id, current_user.id)

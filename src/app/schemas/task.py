@@ -37,7 +37,7 @@ class TaskResponse(TaskBase):
 
     id: UUID
     status: TaskStatus
-    owner_id: int
+    owner_id: UUID
     created_at: datetime
     updated_at: datetime
 
