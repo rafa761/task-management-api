@@ -5,6 +5,7 @@ from uuid import UUID
 import bcrypt
 import jwt
 from fastapi import HTTPException, status
+from pydantic import EmailStr
 
 from app.core.config import settings
 from app.models.user import User
@@ -81,7 +82,7 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             ) from e
 
-    async def authenticate_user(self, email: str, password: str) -> User | None:
+    async def authenticate_user(self, email: EmailStr, password: str) -> User | None:
         """Authenticate user with email and password."""
         user = await self.user_repository.get_by_email(email)
         if not user:
@@ -95,7 +96,7 @@ class AuthService:
 
         return user
 
-    async def login(self, email: str, password: str) -> dict[str, str]:
+    async def login(self, email: EmailStr, password: str) -> dict[str, str]:
         """Login user and return tokens."""
         user = await self.authenticate_user(email, password)
         if not user:
