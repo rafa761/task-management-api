@@ -4,18 +4,15 @@ services:
     build:
       context: ..
       dockerfile: dockerfiles/Dockerfile.dev
-      target: development
     ports:
       - "8000:8000"
     volumes:
-      # Mount source code for hot reloading
-      - ../src:/app/src:cached
-      - ../tests:/app/tests:cached
-      - /app/.venv
+      - ../src:/app/src
+      - ../tests:/app/tests
     env_file:
       - ../.env
     environment:
-      # Override database host for container networking
+      # Override database host for Docker networking
       - POSTGRES_HOST=db
     depends_on:
       db:
@@ -23,12 +20,6 @@ services:
     networks:
       - task_management_network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   db:
     container_name: postgres-db
@@ -37,8 +28,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-task_management_db}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      # Performance tuning for development
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
     volumes:
@@ -51,12 +40,12 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-task_management_db}",
+          "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-task_management_db}",
         ]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
 volumes:
   postgres_data:

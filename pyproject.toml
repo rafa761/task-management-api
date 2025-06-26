@@ -92,6 +92,22 @@ ignore = [
 # Auto-fix what we can
 fixable = ["ALL"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependencies são tratadas como imutáveis para resolver B008
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Security",
+    "Depends",  # Para importações diretas
+    "Query",    # Para importações diretas
+]
+
 [tool.ruff.lint.per-file-ignores]
 # Migrations are generated code
 "migrations/*" = ["ALL"]

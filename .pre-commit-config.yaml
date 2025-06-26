@@ -36,14 +36,6 @@ repos:
         name: "Ruff Formatter"
         types_or: [python]
 
-  # Type checking
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.16.1
-  #   hooks:
-  #     - id: mypy
-  #       files: ^src/
-  #       additional_dependencies: [types-passlib]
-
   # File path comments automation
   - repo: local
     hooks:
@@ -54,14 +46,6 @@ repos:
         files: ^src/.*\.py$
         pass_filenames: false
         description: "Automatically add/update file path comments in Python files"
-
-  # Dockerfile linting
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.13.1-beta
-    hooks:
-      - id: hadolint-docker
-        name: "Dockerfile Lint"
-        files: Dockerfile.*
 
   # YAML formatting
   - repo: https://github.com/pre-commit/mirrors-prettier

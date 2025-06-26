@@ -1,8 +1,11 @@
 # app/core/database.py
+import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -48,7 +51,6 @@ class DatabaseConfig:
             "connect_args": {
                 "server_settings": {
                     "application_name": "task_management_api",
-                    "jit": "off",  # Disable JIT for predictable performance
                 }
             },
         }
@@ -58,14 +60,12 @@ class DatabaseConfig:
             engine_kwargs.update(
                 {
                     "poolclass": QueuePool,
-                    "pool_size": 20,
-                    "max_overflow": 30,
+                    "pool_size": 10,
+                    "max_overflow": 20,
                 }
             )
         else:
-            engine_kwargs["poolclass"] = (
-                NullPool  # For development/testing - only set poolclass, no pool size params
-            )
+            engine_kwargs["poolclass"] = NullPool
 
         engine = create_async_engine(database_url, **engine_kwargs)
 
@@ -88,15 +88,21 @@ class DatabaseConfig:
         if not engine and not self.engine:
             self.create_engine()
 
+        target_engine = engine or self.engine
+
+        if not target_engine:
+            raise RuntimeError("No database engine available for session factory")
+
         session_factory = async_sessionmaker(
-            engine,
+            target_engine,
             class_=AsyncSession,
-            expire_on_commit=False,  # Keep objects usable after commit
-            autoflush=True,  # Auto-flush changes before queries
-            autocommit=False,  # Explicit transaction control
+            expire_on_commit=False,
+            autoflush=True,
+            autocommit=False,
         )
 
         self.session_factory = session_factory
+        logger.info("Database session factory created successfully")
         return session_factory
 
     async def initialize_database(self, drop_existing: bool = False) -> None:
@@ -135,14 +141,9 @@ async def get_db_session() -> AsyncGenerator[AsyncSession]:
 
     Provides proper session lifecycle management with automatic cleanup.
     Use this in dependency injection for FastAPI endpoints.
-
-    Example:
-        async with get_db_session() as session:
-            result = await session.execute(query)
-            await session.commit()
     """
     if not db_config.session_factory:
-        db_config.create_session_factory()
+        raise RuntimeError("Database session factory not initialized.")
 
     async with db_config.session_factory() as session:
         try:
@@ -157,21 +158,12 @@ async def get_db_session() -> AsyncGenerator[AsyncSession]:
 async def get_db() -> AsyncGenerator[AsyncSession]:
     """
     FastAPI dependency for database sessions.
-
-    This function is used as a dependency in FastAPI route handlers
-    to provide database session instances.
-
-    Example:
-        @app.get("/users/")
-        async def list_users(db: AsyncSession = Depends(get_db)):
-            result = await db.execute(select(User))
-            return result.scalars().all()
     """
     async with get_db_session() as session:
         yield session
 
 
-async def check_database_health() -> dict[str, str]:
+async def check_database_health() -> dict[str, Any]:
     """
     Check database connectivity and health.
 
@@ -179,10 +171,34 @@ async def check_database_health() -> dict[str, str]:
         Dictionary with health status information.
     """
     try:
+        # Verify that we have an engine
+        if not db_config.engine:
+            return {
+                "status": "unhealthy",
+                "database": "error",
+                "message": "Database engine not initialized",
+            }
+
+        # Verify that we have a session factory
+        if not db_config.session_factory:
+            return {
+                "status": "unhealthy",
+                "database": "error",
+                "message": "Database session factory not initialized",
+            }
+
+        # Test database connectivity
         async with get_db_session() as session:
             # Simple query to test connectivity
-            result = await session.execute("SELECT 1")
-            result.scalar()
+            result = await session.execute(text("SELECT 1 as health_check"))
+            health_value = result.scalar()
+
+            if health_value != 1:
+                return {
+                    "status": "unhealthy",
+                    "database": "error",
+                    "message": "Database query returned unexpected result",
+                }
 
         return {
             "status": "healthy",
@@ -198,44 +214,82 @@ async def check_database_health() -> dict[str, str]:
         }
 
 
-# Database lifecycle management for FastAPI application
+async def wait_for_database(max_retries: int = 5, retry_interval: float = 5.0) -> None:
+    """
+    Wait for database to become available with retry logic.
+
+    Args:
+        max_retries: Maximum number of connection attempts
+        retry_interval: Time to wait between attempts in seconds
+
+    Raises:
+        RuntimeError: If database is not available after max_retries
+    """
+    logger.info("Waiting for database to become available...")
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            health_status = await check_database_health()
+            if health_status["status"] == "healthy":
+                logger.info(f"Database is ready after {attempt} attempt(s)")
+                return
+
+        except Exception as e:
+            logger.debug(f"Database connection attempt {attempt} failed: {e}")
+
+        if attempt < max_retries:
+            logger.info(
+                f"Database not ready, retrying in {retry_interval}s... (attempt {attempt}/{max_retries})"
+            )
+            await asyncio.sleep(retry_interval)
+        else:
+            logger.error(
+                f"Database failed to become available after {max_retries} attempts"
+            )
+
+    raise RuntimeError(f"Database is not available after {max_retries} attempts")
+
+
 @asynccontextmanager
 async def database_lifespan():
     """
-    Application lifespan context manager for database.
-
-    Handles database initialization on startup and cleanup on shutdown.
-    Use this in FastAPI lifespan events.
+    Application lifespan context manager for database with retry logic.
     """
     # Startup
     logger.info("Initializing database connection")
-    db_config.create_engine()
-    db_config.create_session_factory()
-
-    # Verify database connectivity
-    health_status = await check_database_health()
-    if health_status["status"] != "healthy":
-        raise RuntimeError(
-            f"Database initialization failed: {health_status['message']}"
-        )
-
-    logger.info("Database initialized successfully")
 
     try:
+        # Create engine
+        db_config.create_engine()
+        logger.info("Database engine created successfully")
+
+        # Create session factory
+        db_config.create_session_factory()
+        logger.info("Database session factory created successfully")
+
+        # Wait for database to be ready with retry logic
+        await wait_for_database(max_retries=5, retry_interval=5.0)
+
+        logger.info("Database initialized successfully")
+
         yield
+
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}")
+        raise
     finally:
         # Shutdown
         logger.info("Closing database connections")
         await db_config.close()
 
 
-# Utility functions for testing and development
+# Utility functions for testing
 async def create_test_database() -> None:
     """Create database schema for testing."""
     test_engine = create_async_engine(
         settings.test_database_url,
         echo=False,
-        pool_class=NullPool,  # No connection pooling for tests
+        poolclass=NullPool,
     )
 
     async with test_engine.begin() as conn:
@@ -249,7 +303,7 @@ async def drop_test_database() -> None:
     test_engine = create_async_engine(
         settings.test_database_url,
         echo=False,
-        pool_class=NullPool,
+        poolclass=NullPool,
     )
 
     async with test_engine.begin() as conn:

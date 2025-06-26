@@ -1,85 +1,73 @@
 # tests/conftest.py
-"""
-Test configuration for Task Management API.
-
-Simple setup with SQLite in-memory database for fast, isolated tests.
-"""
+import asyncio
+from collections.abc import AsyncGenerator
 
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import NullPool
 
-from app.models import BaseModel
-from app.models.enums import ProjectStatusEnum
+from app.core.config import get_settings
+from app.core.database import get_db
+from app.core.factory import create_app
+from app.models.base import BaseModel
+
+settings = get_settings()
+
+# Test database engine
+test_engine = create_async_engine(
+    settings.test_database_url,
+    echo=False,
+    pool_class=NullPool,
+)
 
 
-@pytest_asyncio.fixture
-async def db_session():
-    """
-    Create an in-memory SQLite database session for testing.
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
-    Each test gets a fresh database with all tables created.
-    Tests are isolated - no cleanup needed between tests.
-    """
-    # Create in-memory SQLite database
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        echo=False,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-    )
 
-    # Create all tables
-    async with engine.begin() as conn:
+@pytest.fixture(scope="session", autouse=True)
+async def setup_test_database():
+    """Setup test database."""
+    async with test_engine.begin() as conn:
         await conn.run_sync(BaseModel.metadata.create_all)
 
-    # Create session factory
-    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    yield
 
-    # Provide session for test
-    async with async_session() as session:
+    async with test_engine.begin() as conn:
+        await conn.run_sync(BaseModel.metadata.drop_all)
+
+    await test_engine.dispose()
+
+
+@pytest.fixture
+async def db_session() -> AsyncGenerator[AsyncSession]:
+    """Create a test database session."""
+    async with AsyncSession(test_engine, expire_on_commit=False) as session:
         yield session
-
-    # Cleanup
-    await engine.dispose()
+        await session.rollback()
 
 
 @pytest.fixture
-def sample_user_data():
-    """Sample user data for tests."""
-    return {
-        "email": "meg@example.com",
-        "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBkpx5NNOp7QUW",
-        "first_name": "Meg",
-        "last_name": "Ferreira",
-        "timezone": "UTC",
-        "is_active": True,
-        "is_verified": True,
-    }
+def app(db_session: AsyncSession) -> FastAPI:
+    """Create test FastAPI application."""
+    test_app = create_app()
+
+    # Override database dependency
+    async def override_get_db():
+        yield db_session
+
+    test_app.dependency_overrides[get_db] = override_get_db
+
+    return test_app
 
 
 @pytest.fixture
-def sample_project_data():
-    """Sample project data for tests."""
-    from uuid import uuid4
-
-    return {
-        "team_id": uuid4(),  # Will be replaced with real team ID in tests
-        "name": "Test Project",
-        "description": "Test Project Description",
-        "status": ProjectStatusEnum.PLANNING,
-        "is_active": True,
-    }
-
-
-@pytest.fixture
-def sample_team_data():
-    """Sample team data for tests."""
-    return {
-        "name": "Test Team",
-        "slug": "test-team",
-        "description": "A test team for unit testing",
-        "is_active": True,
-        "allow_public_signup": False,
-    }
+def client(app: FastAPI) -> TestClient:
+    """Create test client."""
+    return TestClient(app)

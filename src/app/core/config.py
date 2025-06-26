@@ -30,14 +30,6 @@ class Settings(BaseSettings):
         description="Comma-separated list of allowed CORS origins",
     )
 
-    # Database Configuration
-    DATABASE_URL: str | None = Field(
-        default=None, description="Full database connection URL"
-    )
-    TEST_DATABASE_URL: str | None = Field(
-        default=None, description="Test database connection URL"
-    )
-
     # Individual database components (fallback if DATABASE_URL not provided)
     POSTGRES_HOST: str = Field(default="localhost", description="PostgreSQL host")
     POSTGRES_PORT: int = Field(default=5432, description="PostgreSQL port")
@@ -60,13 +52,6 @@ class Settings(BaseSettings):
     )
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
         default=7, description="Refresh token expiration time in days"
-    )
-
-    # AWS Configuration
-    AWS_REGION: str = Field(default="us-east-1", description="AWS region")
-    AWS_ACCESS_KEY_ID: str | None = Field(default=None, description="AWS access key ID")
-    AWS_SECRET_ACCESS_KEY: str | None = Field(
-        default=None, description="AWS secret access key"
     )
 
     @field_validator("ENVIRONMENT")
@@ -97,9 +82,6 @@ class Settings(BaseSettings):
         """
         Get database URL. Use DATABASE_URL if provided, otherwise construct from components.
         """
-        if self.DATABASE_URL:
-            return self.DATABASE_URL
-
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -110,9 +92,6 @@ class Settings(BaseSettings):
         """
         Get test database URL. Use TEST_DATABASE_URL if provided, otherwise construct from components.
         """
-        if self.TEST_DATABASE_URL:
-            return self.TEST_DATABASE_URL
-
         test_db_name = (
             f"{self.POSTGRES_DB}_test"
             if not self.POSTGRES_DB.endswith("_test")
