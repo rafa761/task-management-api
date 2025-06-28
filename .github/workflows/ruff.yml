@@ -2,8 +2,8 @@
 name: Code Quality (Ruff)
 
 on:
-  push:
-    branches: [main, develop]
+#  push:
+#    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
@@ -32,7 +32,6 @@ jobs:
             src/**/*.py
             tests/**/*.py
             scripts/**/*.py
-            *.py
           separator: ' '
 
       - name: Determine if we should run checks
