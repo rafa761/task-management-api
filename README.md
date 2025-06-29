@@ -60,6 +60,12 @@ Once running, visit:
 - **Interactive API docs**: http://localhost:8000/docs
 - **Alternative docs**: http://localhost:8000/redoc
 
+![OpenApiDoc1](/docs/images/openapi-doc-1.png)
+
+![OpenApiDoc2](/docs/images/openapi-doc-2.png)
+
+![OpenApiDoc3](/docs/images/openapi-doc-3.png)
+
 ## Development
 
 - **Code quality**: `ruff check . && ruff format .`
