@@ -1,5 +1,5 @@
 # Multi-stage build for efficiency and security
-FROM python:3.13.3-slim-bookworm AS base
+FROM python:3.13.5-slim-bookworm AS base
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
