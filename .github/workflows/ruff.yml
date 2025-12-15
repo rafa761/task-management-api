@@ -80,7 +80,7 @@ jobs:
 
       # Multi-level caching for optimal performance
       - name: Cache Ruff binary
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.local/share/pipx
@@ -90,7 +90,7 @@ jobs:
             ruff-binary-${{ runner.os }}-
 
       - name: Cache Ruff analysis cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ruff
           key: ruff-cache-${{ runner.os }}-${{ hashFiles('src/**/*.py', 'tests/**/*.py', 'scripts/**/*.py', '*.py') }}
